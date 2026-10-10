@@ -1,0 +1,260 @@
+:root {
+  color-scheme: light;
+  font-family: Inter, "Segoe UI", Arial, sans-serif;
+  color: #142b40;
+  background: #f4f7fa;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+}
+
+.login-layout {
+  display: grid;
+  min-height: 100vh;
+  grid-template-columns: minmax(320px, 0.92fr) minmax(400px, 1.08fr);
+}
+
+.brand-panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  overflow: hidden;
+  padding: clamp(32px, 6vw, 76px);
+  color: #fff;
+  background:
+    radial-gradient(ellipse at 18% 82%, rgb(53 113 151 / 28%), transparent 45%),
+    linear-gradient(145deg, #173b59, #102b46 67%, #0c233a);
+}
+
+.brand-panel::after {
+  position: absolute;
+  right: -130px;
+  bottom: -210px;
+  width: 520px;
+  height: 520px;
+  border: 1px solid rgb(255 255 255 / 9%);
+  border-radius: 50%;
+  box-shadow: 0 0 0 55px rgb(255 255 255 / 3%), 0 0 0 110px rgb(255 255 255 / 2%);
+  content: "";
+}
+
+.brand,
+.brand-mark {
+  display: flex;
+  align-items: center;
+}
+
+.brand {
+  gap: 12px;
+  font-size: 18px;
+  letter-spacing: -0.4px;
+}
+
+.brand strong {
+  color: #81d3bc;
+  font-weight: 600;
+}
+
+.brand-mark {
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border: 1px solid rgb(255 255 255 / 28%);
+  border-radius: 11px;
+  color: #81d3bc;
+  font-family: Georgia, serif;
+  font-size: 22px;
+}
+
+.brand-copy {
+  position: relative;
+  z-index: 1;
+  max-width: 470px;
+  margin: 60px 0;
+}
+
+.eyebrow {
+  margin: 0 0 13px;
+  color: #4f8b7c;
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: 1.8px;
+}
+
+.brand-copy .eyebrow {
+  color: #81d3bc;
+}
+
+.brand-copy h1 {
+  margin: 0;
+  font-size: clamp(38px, 5vw, 62px);
+  font-weight: 600;
+  letter-spacing: -2.6px;
+  line-height: 1.08;
+}
+
+.brand-copy > p:last-child {
+  max-width: 355px;
+  margin-top: 22px;
+  color: #bdcbd6;
+  font-size: 16px;
+  line-height: 1.7;
+}
+
+.brand-footnote {
+  z-index: 1;
+  margin: 0;
+  color: #a8bbc9;
+  font-size: 12px;
+}
+
+.form-panel {
+  display: grid;
+  place-items: center;
+  padding: 40px 24px;
+  background: #f7f9fb;
+}
+
+.login-card {
+  width: min(100%, 410px);
+}
+
+.login-card h2 {
+  margin: 0;
+  font-size: 30px;
+  letter-spacing: -1px;
+}
+
+.form-intro {
+  margin: 11px 0 31px;
+  color: #718092;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+form label {
+  display: block;
+  margin: 0 0 9px;
+  color: #2b4054;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+form input {
+  width: 100%;
+  height: 48px;
+  margin-bottom: 20px;
+  padding: 0 14px;
+  border: 1px solid #dce4ea;
+  border-radius: 8px;
+  outline: none;
+  background: #fff;
+  color: #183148;
+  font: inherit;
+  font-size: 14px;
+  transition: border-color 150ms, box-shadow 150ms;
+}
+
+form input::placeholder {
+  color: #a3afbb;
+}
+
+form input:focus {
+  border-color: #4f8b7c;
+  box-shadow: 0 0 0 3px rgb(79 139 124 / 13%);
+}
+
+.form-error {
+  min-height: 18px;
+  margin: -6px 0 9px;
+  color: #b52e3b;
+  font-size: 13px;
+}
+
+form button {
+  display: flex;
+  width: 100%;
+  height: 49px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 17px;
+  border: 0;
+  border-radius: 8px;
+  background: #173b59;
+  color: #fff;
+  cursor: pointer;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 650;
+  transition: background 150ms, transform 150ms;
+}
+
+form button:hover {
+  background: #214d6d;
+}
+
+form button:active {
+  transform: translateY(1px);
+}
+
+form button:disabled {
+  cursor: wait;
+  opacity: 0.72;
+}
+
+.initial-access {
+  margin: 22px 0 0;
+  color: #738292;
+  font-size: 12px;
+  text-align: center;
+}
+
+.initial-access strong {
+  color: #385d75;
+}
+
+.security-note {
+  margin: 30px 0 0;
+  color: #a0aab4;
+  font-size: 11px;
+  text-align: center;
+}
+
+@media (max-width: 760px) {
+  .login-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .brand-panel {
+    min-height: 255px;
+    padding: 27px 28px;
+  }
+
+  .brand-copy {
+    margin: 39px 0 20px;
+  }
+
+  .brand-copy h1 {
+    font-size: 36px;
+  }
+
+  .brand-copy > p:last-child,
+  .brand-footnote {
+    display: none;
+  }
+
+  .form-panel {
+    align-items: start;
+    padding-top: 45px;
+  }
+}
