@@ -87,12 +87,15 @@ test('authenticates the administrator and returns only temporary dashboard data'
     summary: {
       reservationsToday: 0,
       pendingReservations: 0,
-      availableRooms: 0,
       occupiedRooms: 0,
-      maintenanceRooms: 0,
       pendingPayments: 0,
       recordedIncome: 0,
-      recentActivity: []
+      recentActivity: [],
+      totalRooms: 0,
+      availableRooms: 0,
+      cleaningRooms: 0,
+      maintenanceRooms: 0,
+      outOfServiceRooms: 0
     }
   });
 

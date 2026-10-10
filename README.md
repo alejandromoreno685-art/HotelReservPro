@@ -1,9 +1,10 @@
 # HotelReserve Pro
 
-Aplicación web para la administración hotelera. Esta primera entrega contiene la
-arquitectura modular, inicio de sesión con JWT y un panel inicial. Todavía no se
-conecta a SQL Server, MySQL ni a otro motor de base de datos: los datos actuales
-son temporales y viven únicamente mientras el proceso Node.js está activo.
+Aplicación web para la administración hotelera. Esta entrega contiene la
+arquitectura modular, inicio de sesión con JWT, gestión temporal de habitaciones
+y un panel inicial. Todavía no se conecta a SQL Server, MySQL ni a otro motor de
+base de datos: los datos actuales viven únicamente mientras el proceso Node.js
+está activo.
 
 ## Requisitos
 
@@ -54,6 +55,12 @@ src/
       routes/
       services/
       views/
+    rooms/
+      controllers/
+      models/
+      routes/
+      services/
+      views/
 public/
   css/       # Hoja de estilos independiente por módulo
   js/        # JavaScript del frontend
@@ -68,8 +75,11 @@ public/
 
 La API de autenticación está en `/api/auth` (`POST /login`, `POST /logout` y
 `GET /me`). El dashboard protegido está en `/dashboard` y su resumen se entrega
-por `GET /api/dashboard/summary`. El JWT se firma con HS256 y se guarda en una
-cookie `HttpOnly` con `SameSite=Strict`.
+por `GET /api/dashboard/summary`. La administración de habitaciones está en
+`/rooms`, con endpoints protegidos en `/api/rooms` para listar, crear, consultar,
+actualizar y eliminar habitaciones. El inventario temporal se pierde al reiniciar
+el servidor. El JWT se firma con HS256 y se guarda en una cookie `HttpOnly` con
+`SameSite=Strict`.
 
 ## Pruebas
 
@@ -78,4 +88,4 @@ npm test
 ```
 
 Las pruebas ejercitan autenticación, cookies JWT, protección del dashboard,
-cierre de sesión y respuesta del resumen temporal.
+cierre de sesión, el resumen y el CRUD temporal de habitaciones.

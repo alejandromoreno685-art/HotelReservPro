@@ -7,6 +7,8 @@ const { requireJwt, requirePageJwt } = require('./src/middlewares/jwt');
 const authRoutes = require('./src/modules/auth/routes/authRoutes');
 const dashboardRoutes = require('./src/modules/dashboard/routes/dashboardRoutes');
 const dashboardPageRoutes = require('./src/modules/dashboard/routes/dashboardPageRoutes');
+const roomRoutes = require('./src/modules/rooms/routes/roomRoutes');
+const roomPageRoutes = require('./src/modules/rooms/routes/roomPageRoutes');
 
 const app = express();
 const modulesPath = path.join(__dirname, 'src', 'modules');
@@ -25,7 +27,9 @@ app.get('/login', (req, res) => res.render('auth/views/login'));
 
 app.use('/api/auth', authRoutes);
 app.use('/api/dashboard', requireJwt, dashboardRoutes);
+app.use('/api/rooms', requireJwt, roomRoutes);
 app.use('/dashboard', requirePageJwt, dashboardPageRoutes);
+app.use('/rooms', requirePageJwt, roomPageRoutes);
 
 app.use('/api', (req, res) => {
   res.status(404).json({ message: 'Endpoint no encontrado.' });
@@ -36,13 +40,15 @@ app.use((req, res) => {
 });
 
 app.use((err, req, res, next) => {
-  console.error(err);
+  const statusCode = Number.isInteger(err.statusCode) ? err.statusCode : 500;
+  const message = statusCode < 500 ? err.message : 'Ocurrió un error interno.';
+  if (statusCode >= 500) console.error(err);
 
   if (req.path.startsWith('/api/')) {
-    return res.status(500).json({ message: 'Ocurrió un error interno.' });
+    return res.status(statusCode).json({ message });
   }
 
-  return res.status(500).send('Ocurrió un error interno.');
+  return res.status(statusCode).send(message);
 });
 
 const port = Number(process.env.PORT) || 3000;
