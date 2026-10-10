@@ -1,10 +1,10 @@
 const dashboardModel = require('../models/dashboardModel');
 const roomService = require('../../rooms/services/roomService');
 
-function getSummary() {
+async function getSummary() {
   return {
     ...dashboardModel.getSummary(),
-    ...roomService.getCounts()
+    ...await roomService.getCounts()
   };
 }
 

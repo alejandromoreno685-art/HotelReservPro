@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#102b46">
+  <title>Disponibilidad | HotelReserve Pro</title>
+  <link rel="stylesheet" href="/css/availability.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <a class="brand" href="/dashboard"><span class="brand-mark">H</span><span>HotelReserve <strong>Pro</strong></span></a>
+      <p class="nav-heading">PRINCIPAL</p>
+      <nav aria-label="Navegación principal">
+        <a class="nav-link" href="/dashboard"><span class="nav-icon">01</span> Panel general</a>
+        <span class="nav-link disabled"><span class="nav-icon">02</span> Reservas <small>Próximamente</small></span>
+        <a class="nav-link" href="/rooms"><span class="nav-icon">03</span> Habitaciones</a>
+        <a class="nav-link" href="/guests"><span class="nav-icon">04</span> Huéspedes</a>
+        <a class="nav-link active" href="/availability"><span class="nav-icon">05</span> Disponibilidad</a>
+      </nav>
+      <div class="sidebar-bottom">
+        <div class="hotel-label"><span class="hotel-dot"></span><span><strong>Hotel El Turista</strong><small>Panel de administración</small></span></div>
+        <p id="logout-error" class="error-text" role="alert" aria-live="polite"></p>
+        <button class="logout-button" id="logout-button" type="button">Cerrar sesión</button>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <header class="topbar">
+        <button class="menu-button" id="menu-button" type="button" aria-label="Abrir menú">☰</button>
+        <div class="breadcrumb">HotelReserve Pro <span>/</span> Disponibilidad</div>
+        <div class="user-menu"><span class="user-avatar">A</span><span class="user-details"><strong><%= user.username %></strong><small><%= user.role === 'admin' ? 'Administrador' : 'Recepcionista' %></small></span></div>
+      </header>
+      <section class="page-content">
+        <div class="page-heading"><div><p class="eyebrow">PLANIFICACIÓN DE ESTADÍAS</p><h1>Consultar disponibilidad</h1><p class="welcome">Encuentra habitaciones operativas que se ajusten a las fechas y huéspedes.</p></div></div>
+        <section class="search-card" aria-labelledby="search-title">
+          <div class="search-heading"><span class="search-icon">⌕</span><div><h2 id="search-title">Busca una habitación</h2><p>La salida se interpreta como exclusiva: otra estadía puede iniciar ese mismo día.</p></div></div>
+          <form id="availability-form">
+            <label for="check-in">Fecha de entrada<input id="check-in" name="checkIn" type="date" required></label>
+            <label for="check-out">Fecha de salida<input id="check-out" name="checkOut" type="date" required></label>
+            <label for="guest-count">Huéspedes<input id="guest-count" name="guestCount" type="number" min="1" max="12" value="1" required></label>
+            <label for="room-type">Tipo de habitación<select id="room-type" name="roomType"><option value="">Cualquier tipo</option><option value="ESTANDAR">Estándar</option><option value="DOBLE">Doble</option><option value="FAMILIAR">Familiar</option><option value="SUITE">Suite</option></select></label>
+            <button class="primary-button" id="search-button" type="submit">Consultar disponibilidad</button>
+          </form>
+        </section>
+        <p id="page-message" class="page-message" role="status" aria-live="polite"></p>
+        <section class="results-card" aria-labelledby="results-title">
+          <div class="results-heading"><div><p class="eyebrow">RESULTADOS</p><h2 id="results-title">Habitaciones disponibles</h2></div><span class="result-count" id="result-count">Sin consulta</span></div>
+          <p class="results-note">Se excluyen habitaciones en limpieza, mantenimiento o fuera de servicio, y reservas activas cuyos intervalos se cruzan con las fechas consultadas.</p>
+          <div class="results-list" id="results-list"></div>
+          <div class="empty-state" id="empty-state"><span class="empty-mark">⌕</span><strong id="empty-title">Indica las fechas de tu consulta</strong><p id="empty-description">Mostraremos habitaciones que cumplan con capacidad, tipo y disponibilidad para ese período.</p></div>
+        </section>
+        <footer class="page-footer">HotelReserve Pro <span>·</span> Versión 1.0.0</footer>
+      </section>
+    </main>
+  </div>
+  <div class="mobile-scrim" id="mobile-scrim"></div>
+  <script src="/js/availability.js" defer></script>
+</body>
+</html>

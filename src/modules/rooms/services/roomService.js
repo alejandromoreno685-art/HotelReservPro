@@ -85,43 +85,43 @@ function normalizeRoom(input, existingRoom) {
   };
 }
 
-function listRooms(filters) {
+async function listRooms(filters) {
   return roomModel.list(validateFilters(filters || {}));
 }
 
-function getRoom(id) {
-  const room = roomModel.findById(id);
+async function getRoom(id) {
+  const room = await roomModel.findById(id);
   if (!room) throw new RoomError('No se encontró la habitación.', 404);
   return room;
 }
 
-function createRoom(input) {
+async function createRoom(input) {
   const data = normalizeRoom(input);
-  if (roomModel.findByNumber(data.number)) {
+  if (await roomModel.findByNumber(data.number)) {
     throw new RoomError('Ya existe una habitación con ese número.', 409);
   }
   return roomModel.create(data);
 }
 
-function updateRoom(id, input) {
-  const currentRoom = roomModel.findById(id);
+async function updateRoom(id, input) {
+  const currentRoom = await roomModel.findById(id);
   if (!currentRoom) throw new RoomError('No se encontró la habitación.', 404);
 
   const data = normalizeRoom(input, currentRoom);
-  if (data.number !== currentRoom.number && roomModel.findByNumber(data.number)) {
+  if (data.number !== currentRoom.number && await roomModel.findByNumber(data.number)) {
     throw new RoomError('Ya existe una habitación con ese número.', 409);
   }
   return roomModel.update(id, data);
 }
 
-function deleteRoom(id) {
-  const room = roomModel.remove(id);
+async function deleteRoom(id) {
+  const room = await roomModel.remove(id);
   if (!room) throw new RoomError('No se encontró la habitación.', 404);
   return room;
 }
 
-function getCounts() {
-  const rooms = roomModel.list();
+async function getCounts() {
+  const rooms = await roomModel.list();
   return {
     totalRooms: rooms.length,
     availableRooms: rooms.filter((room) => room.status === 'DISPONIBLE').length,

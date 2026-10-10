@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#102b46">
+  <title>Huéspedes | HotelReserve Pro</title>
+  <link rel="stylesheet" href="/css/guests.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <a class="brand" href="/dashboard"><span class="brand-mark">H</span><span>HotelReserve <strong>Pro</strong></span></a>
+      <p class="nav-heading">PRINCIPAL</p>
+      <nav aria-label="Navegación principal">
+        <a class="nav-link" href="/dashboard"><span class="nav-icon">01</span> Panel general</a>
+        <span class="nav-link disabled"><span class="nav-icon">02</span> Reservas <small>Próximamente</small></span>
+        <a class="nav-link" href="/rooms"><span class="nav-icon">03</span> Habitaciones</a>
+        <a class="nav-link active" href="/guests"><span class="nav-icon">04</span> Huéspedes</a>
+        <a class="nav-link" href="/availability"><span class="nav-icon">05</span> Disponibilidad</a>
+      </nav>
+      <div class="sidebar-bottom">
+        <div class="hotel-label"><span class="hotel-dot"></span><span><strong>Hotel El Turista</strong><small>Panel de administración</small></span></div>
+        <p id="logout-error" class="error-text" role="alert" aria-live="polite"></p>
+        <button class="logout-button" id="logout-button" type="button">Cerrar sesión</button>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <header class="topbar">
+        <button class="menu-button" id="menu-button" type="button" aria-label="Abrir menú">☰</button>
+        <div class="breadcrumb">HotelReserve Pro <span>/</span> Huéspedes</div>
+        <div class="user-menu"><span class="user-avatar">A</span><span class="user-details"><strong><%= user.username %></strong><small><%= user.role === 'admin' ? 'Administrador' : 'Recepcionista' %></small></span></div>
+      </header>
+      <section class="page-content">
+        <div class="page-heading">
+          <div><p class="eyebrow">DIRECTORIO DE CLIENTES</p><h1>Huéspedes</h1><p class="welcome">Registra y consulta los datos de los huéspedes del hotel.</p></div>
+          <button class="primary-button" id="new-guest-button" type="button">＋ Nuevo huésped</button>
+        </div>
+        <p id="page-message" class="page-message" role="status" aria-live="polite"></p>
+        <section class="panel-card" aria-labelledby="guest-title">
+          <div class="panel-heading"><div><h2 id="guest-title">Directorio de huéspedes</h2><p>El tipo y número de documento deben ser únicos.</p></div><span class="data-label">Datos temporales</span></div>
+          <label class="search-field" for="search-input"><span aria-hidden="true">⌕</span><input id="search-input" type="search" placeholder="Buscar por nombre, documento, teléfono o correo"></label>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Huésped</th><th>Documento</th><th>Teléfono</th><th>Correo</th><th>País</th><th><span class="sr-only">Acciones</span></th></tr></thead>
+              <tbody id="guests-table-body"></tbody>
+            </table>
+          </div>
+          <div class="empty-state" id="empty-state" hidden><span class="empty-mark">H</span><strong id="empty-title">Todavía no hay huéspedes</strong><p id="empty-description">Registra el primer huésped para empezar el directorio.</p></div>
+        </section>
+        <footer class="page-footer">HotelReserve Pro <span>·</span> Versión 1.0.0</footer>
+      </section>
+    </main>
+  </div>
+  <div class="mobile-scrim" id="mobile-scrim"></div>
+
+  <dialog class="guest-dialog" id="guest-dialog" aria-labelledby="form-title">
+    <form id="guest-form">
+      <div class="dialog-heading"><div><p class="eyebrow">DIRECTORIO DE CLIENTES</p><h2 id="form-title">Nuevo huésped</h2></div><button class="icon-button" id="close-dialog-button" type="button" aria-label="Cerrar formulario">×</button></div>
+      <p class="dialog-intro">Los campos marcados son obligatorios. La condición de extranjero no residente se registra explícitamente.</p>
+      <div class="form-grid">
+        <label class="wide" for="guest-name">Nombre completo<input id="guest-name" name="fullName" type="text" maxlength="160" autocomplete="name" required></label>
+        <label for="guest-document-type">Tipo de documento<select id="guest-document-type" name="documentType" required><option value="">Selecciona</option><option value="CC">Cédula de ciudadanía</option><option value="CE">Cédula de extranjería</option><option value="PASSPORT">Pasaporte</option><option value="TI">Tarjeta de identidad</option><option value="NIT">NIT</option><option value="OTHER">Otro</option></select></label>
+        <label for="guest-document-number">Número de documento<input id="guest-document-number" name="documentNumber" type="text" maxlength="40" required></label>
+        <label for="guest-phone">Teléfono<input id="guest-phone" name="phone" type="tel" maxlength="30" autocomplete="tel" required></label>
+        <label for="guest-email">Correo electrónico<input id="guest-email" name="email" type="email" maxlength="254" autocomplete="email" required></label>
+        <label for="guest-country">País de residencia<input id="guest-country" name="country" type="text" maxlength="100" autocomplete="country-name" required></label>
+        <label class="checkbox-field wide" for="guest-foreign"><input id="guest-foreign" name="foreignNonResident" type="checkbox"><span>Extranjero no residente (condición declarada)</span></label>
+      </div>
+      <p class="form-error" id="form-error" role="alert" aria-live="polite"></p>
+      <div class="dialog-actions"><button class="secondary-button" id="cancel-dialog-button" type="button">Cancelar</button><button class="primary-button" id="save-guest-button" type="submit">Guardar huésped</button></div>
+    </form>
+  </dialog>
+  <script src="/js/guests.js" defer></script>
+</body>
+</html>

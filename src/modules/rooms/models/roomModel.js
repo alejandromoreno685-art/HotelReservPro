@@ -2,10 +2,16 @@ const { randomUUID } = require('node:crypto');
 
 const rooms = new Map();
 
-function list(filters = {}) {
-  const search = (filters.search || '').toLocaleLowerCase();
+function sortRooms(rooms) {
+  return rooms.sort((left, right) => left.number.localeCompare(right.number, 'es', {
+    numeric: true,
+    sensitivity: 'base'
+  }));
+}
 
-  return [...rooms.values()]
+async function list(filters = {}) {
+  const search = (filters.search || '').toLocaleLowerCase();
+  return sortRooms([...rooms.values()]
     .filter((room) => !filters.status || room.status === filters.status)
     .filter((room) => !filters.type || room.type === filters.type)
     .filter((room) => (
@@ -13,53 +19,44 @@ function list(filters = {}) {
       room.number.toLocaleLowerCase().includes(search) ||
       room.description.toLocaleLowerCase().includes(search)
     ))
-    .sort((left, right) => left.number.localeCompare(right.number, 'es', {
-      numeric: true,
-      sensitivity: 'base'
-    }))
-    .map((room) => ({ ...room }));
+    .map((room) => ({ ...room })));
 }
 
-function findById(id) {
+async function findById(id) {
   const room = rooms.get(id);
   return room ? { ...room } : null;
 }
 
-function findByNumber(number) {
-  const normalizedNumber = number.toLocaleUpperCase();
-  return [...rooms.values()].some((room) => room.number === normalizedNumber);
+async function findByNumber(number) {
+  return [...rooms.values()].some((room) => room.number === number.toUpperCase());
 }
 
-function create(data) {
+async function create(data) {
+  const id = randomUUID();
   const now = new Date().toISOString();
-  const room = {
-    id: randomUUID(),
-    ...data,
-    createdAt: now,
-    updatedAt: now
-  };
+  const room = { id, ...data, createdAt: now, updatedAt: now };
   rooms.set(room.id, room);
   return { ...room };
 }
 
-function update(id, data) {
+async function update(id, data) {
   const currentRoom = rooms.get(id);
   if (!currentRoom) return null;
-
-  const room = {
-    ...currentRoom,
-    ...data,
-    updatedAt: new Date().toISOString()
-  };
+  const room = { ...currentRoom, ...data, updatedAt: new Date().toISOString() };
   rooms.set(id, room);
   return { ...room };
 }
 
-function remove(id) {
-  const room = rooms.get(id);
+async function remove(id) {
+  const room = await findById(id);
   if (!room) return null;
   rooms.delete(id);
-  return { ...room };
+  return room;
 }
 
-module.exports = { list, findById, findByNumber, create, update, remove };
+async function findAvailable(filters) {
+  return (await list({ type: filters.type }))
+    .filter((room) => room.status === 'DISPONIBLE' && room.capacity >= filters.guestCount);
+}
+
+module.exports = { list, findById, findByNumber, create, update, remove, findAvailable };

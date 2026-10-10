@@ -1,5 +1,6 @@
 const { after, before, test } = require('node:test');
 const assert = require('node:assert/strict');
+process.env.NODE_ENV = 'test';
 const app = require('../main');
 
 let server;
@@ -77,7 +78,11 @@ test('authenticates the administrator and returns only temporary dashboard data'
     headers: { cookie }
   });
   assert.equal(currentUserResponse.status, 200);
-  assert.equal((await currentUserResponse.json()).user.username, 'admin');
+  assert.deepEqual((await currentUserResponse.json()).user, {
+    id: 'user-admin',
+    username: 'admin',
+    role: 'admin'
+  });
 
   const dashboardResponse = await fetch(`${baseUrl}/api/dashboard/summary`, {
     headers: { cookie }
@@ -104,4 +109,22 @@ test('authenticates the administrator and returns only temporary dashboard data'
     headers: { cookie }
   });
   assert.equal(logoutResponse.status, 204);
+});
+
+test('locks the administrator for repeated failed passwords', async () => {
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const response = await fetch(`${baseUrl}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ username: 'admin', password: 'incorrecta' })
+    });
+    assert.equal(response.status, 401);
+  }
+
+  const lockedResponse = await fetch(`${baseUrl}/api/auth/login`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ username: 'admin', password: 'admin123' })
+  });
+  assert.equal(lockedResponse.status, 401);
 });

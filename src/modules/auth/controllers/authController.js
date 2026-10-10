@@ -2,7 +2,7 @@ const authService = require('../services/authService');
 const { cookieName } = require('../../../middlewares/jwt');
 const { tokenLifetimeSeconds, isProduction } = require('../../../security');
 
-function login(req, res) {
+async function login(req, res) {
   const { username, password } = req.body || {};
 
   if (typeof username !== 'string' || typeof password !== 'string' ||
@@ -10,7 +10,7 @@ function login(req, res) {
     return res.status(400).json({ message: 'Ingresa el usuario y la contraseña.' });
   }
 
-  const session = authService.authenticate(username.trim(), password);
+  const session = await authService.authenticate(username.trim(), password);
   if (!session) {
     return res.status(401).json({ message: 'Usuario o contraseña incorrectos.' });
   }
@@ -41,7 +41,7 @@ function currentUser(req, res) {
     user: {
       id: req.auth.sub,
       username: req.auth.username,
-      role: req.auth.role
+      role: req.auth.role.toLowerCase()
     }
   });
 }
