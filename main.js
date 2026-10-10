@@ -3,6 +3,8 @@ require('dotenv').config();
 const path = require('node:path');
 const express = require('express');
 const cookieParser = require('cookie-parser');
+const database = require('./src/database');
+const userStore = require('./src/modules/auth/models/userStore');
 const { requireJwt, requirePageJwt } = require('./src/middlewares/jwt');
 const authRoutes = require('./src/modules/auth/routes/authRoutes');
 const dashboardRoutes = require('./src/modules/dashboard/routes/dashboardRoutes');
@@ -13,6 +15,8 @@ const guestRoutes = require('./src/modules/guests/routes/guestRoutes');
 const guestPageRoutes = require('./src/modules/guests/routes/guestPageRoutes');
 const availabilityRoutes = require('./src/modules/availability/routes/availabilityRoutes');
 const availabilityPageRoutes = require('./src/modules/availability/routes/availabilityPageRoutes');
+const reservationRoutes = require('./src/modules/reservations/routes/reservationRoutes');
+const reservationPageRoutes = require('./src/modules/reservations/routes/reservationPageRoutes');
 
 const app = express();
 const modulesPath = path.join(__dirname, 'src', 'modules');
@@ -34,10 +38,12 @@ app.use('/api/dashboard', requireJwt, dashboardRoutes);
 app.use('/api/rooms', requireJwt, roomRoutes);
 app.use('/api/guests', requireJwt, guestRoutes);
 app.use('/api/availability', requireJwt, availabilityRoutes);
+app.use('/api/reservations', requireJwt, reservationRoutes);
 app.use('/dashboard', requirePageJwt, dashboardPageRoutes);
 app.use('/rooms', requirePageJwt, roomPageRoutes);
 app.use('/guests', requirePageJwt, guestPageRoutes);
 app.use('/availability', requirePageJwt, availabilityPageRoutes);
+app.use('/reservations', requirePageJwt, reservationPageRoutes);
 
 app.use('/api', (req, res) => {
   res.status(404).json({ message: 'Endpoint no encontrado.' });
@@ -50,9 +56,11 @@ app.use((req, res) => {
 app.use((err, req, res, next) => {
   const statusCode = Number.isInteger(err.statusCode)
     ? err.statusCode
-    : 500;
+    : ([2601, 2627, 547].includes(err.number) ? 409 : 500);
   const message = statusCode < 500
-    ? err.message
+    ? (err.number === 547
+      ? 'No se puede eliminar el registro porque tiene información relacionada.'
+      : (err.number ? 'El registro ya existe.' : err.message))
     : 'Ocurrió un error interno.';
   if (statusCode >= 500) console.error(err);
 
@@ -66,9 +74,21 @@ app.use((err, req, res, next) => {
 const port = Number(process.env.PORT) || 3000;
 
 if (require.main === module) {
-  app.listen(port, () => {
-    console.log(`HotelReserve Pro disponible en http://localhost:${port}`);
-  });
+  async function start() {
+    try {
+      await database.checkConnection();
+      await userStore.ensureAdmin();
+      app.listen(port, () => {
+        console.log(`HotelReserve Pro disponible en http://localhost:${port}`);
+      });
+    } catch (error) {
+      console.error('No fue posible iniciar la app. Verifica SQL Server, el esquema y las credenciales DB_*.', error);
+      await database.closePool();
+      process.exitCode = 1;
+    }
+  }
+
+  start();
 }
 
 module.exports = app;

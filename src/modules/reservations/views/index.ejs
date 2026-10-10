@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#102b46">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <title>Reservas | HotelReserve Pro</title>
+  <link rel="stylesheet" href="/css/reservations.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <a class="brand" href="/dashboard"><span class="brand-mark">H</span><span>HotelReserve <strong>Pro</strong></span></a>
+      <p class="nav-heading">PRINCIPAL</p>
+      <nav aria-label="Navegación principal">
+        <a class="nav-link" href="/dashboard"><span class="nav-icon">01</span> Panel general</a>
+        <a class="nav-link active" href="/reservations"><span class="nav-icon">02</span> Reservas</a>
+        <a class="nav-link" href="/rooms"><span class="nav-icon">03</span> Habitaciones</a>
+        <a class="nav-link" href="/guests"><span class="nav-icon">04</span> Huéspedes</a>
+        <a class="nav-link" href="/availability"><span class="nav-icon">05</span> Disponibilidad</a>
+      </nav>
+      <div class="sidebar-bottom">
+        <div class="hotel-label"><span class="hotel-dot"></span><span><strong>Hotel El Turista</strong><small>Panel de administración</small></span></div>
+        <p id="logout-error" class="error-text" role="alert" aria-live="polite"></p>
+        <button class="logout-button" id="logout-button" type="button">Cerrar sesión</button>
+      </div>
+    </aside>
+    <main class="main-content">
+      <header class="topbar">
+        <button class="menu-button" id="menu-button" type="button" aria-label="Abrir menú">☰</button>
+        <div class="breadcrumb">HotelReserve Pro <span>/</span> Reservas</div>
+        <div class="user-menu"><span class="user-avatar">A</span><span class="user-details"><strong><%= user.username %></strong><small><%= user.role === 'admin' ? 'Administrador' : 'Recepcionista' %></small></span></div>
+      </header>
+      <section class="page-content">
+        <div class="page-heading">
+          <div><p class="eyebrow">ESTADÍAS DEL HOTEL</p><h1>Reservas</h1><p class="welcome">Registra estadías y controla su confirmación y cancelación.</p></div>
+          <button class="primary-button" id="new-reservation-button" type="button">＋ Nueva reserva</button>
+        </div>
+        <p id="page-message" class="page-message" role="status" aria-live="polite"></p>
+        <section class="panel-card" aria-labelledby="reservations-title">
+          <div class="panel-heading"><div><h2 id="reservations-title">Listado de reservas</h2><p>Las reservas pendientes y confirmadas bloquean la habitación para el período.</p></div><span class="data-label">SQL Server</span></div>
+          <div class="filters">
+            <label class="filter-field" for="status-filter"><span>Estado</span>
+              <select id="status-filter">
+                <option value="">Todos los estados</option>
+                <option value="PENDING_DEPOSIT">Pendiente</option>
+                <option value="CONFIRMED">Confirmada</option>
+                <option value="IN_PROGRESS">En curso</option>
+                <option value="COMPLETED">Finalizada</option>
+                <option value="CANCELLED">Cancelada</option>
+              </select>
+            </label>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Huésped</th><th>Habitación</th><th>Entrada</th><th>Salida</th><th>Huéspedes</th><th>Estado</th><th><span class="sr-only">Acciones</span></th></tr></thead>
+              <tbody id="reservations-table-body"></tbody>
+            </table>
+          </div>
+          <div class="empty-state" id="empty-state" hidden><span class="empty-mark">R</span><strong id="empty-title">Todavía no hay reservas</strong><p id="empty-description">Crea una reserva para verla en este listado.</p></div>
+        </section>
+        <footer class="page-footer">HotelReserve Pro <span>·</span> Versión 1.0.0</footer>
+      </section>
+    </main>
+  </div>
+  <div class="mobile-scrim" id="mobile-scrim"></div>
+
+  <dialog class="reservation-dialog" id="reservation-dialog" aria-labelledby="form-title">
+    <form id="reservation-form">
+      <div class="dialog-heading"><div><p class="eyebrow">ESTADÍAS DEL HOTEL</p><h2 id="form-title">Nueva reserva</h2></div><button class="icon-button" id="close-dialog-button" type="button" aria-label="Cerrar formulario">×</button></div>
+      <p class="dialog-intro">Selecciona fechas y huéspedes para consultar habitaciones operativas sin cruces de reserva.</p>
+      <div class="form-grid">
+        <label for="check-in">Fecha de entrada<input id="check-in" name="checkIn" type="date" required></label>
+        <label for="check-out">Fecha de salida<input id="check-out" name="checkOut" type="date" required></label>
+        <label for="guest-count">Cantidad de huéspedes<input id="guest-count" name="guestCount" type="number" min="1" max="12" value="1" required></label>
+        <label for="guest-id">Huésped responsable<select id="guest-id" name="guestId" required><option value="">Cargando huéspedes...</option></select></label>
+        <label class="wide" for="room-id">Habitación disponible<select id="room-id" name="roomId" required disabled><option value="">Consulta primero las fechas</option></select></label>
+      </div>
+      <button class="secondary-button search-rooms-button" id="search-rooms-button" type="button">Consultar habitaciones disponibles</button>
+      <p class="form-error" id="form-error" role="alert" aria-live="polite"></p>
+      <div class="dialog-actions"><button class="secondary-button" id="cancel-dialog-button" type="button">Cancelar</button><button class="primary-button" id="save-reservation-button" type="submit">Crear reserva</button></div>
+    </form>
+  </dialog>
+  <script src="/js/reservations.js" defer></script>
+</body>
+</html>

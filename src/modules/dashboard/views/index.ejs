@@ -18,7 +18,7 @@
       <p class="nav-heading">PRINCIPAL</p>
       <nav aria-label="Navegación principal">
         <a class="nav-link active" href="/dashboard"><span class="nav-icon">01</span> Panel general</a>
-        <span class="nav-link disabled"><span class="nav-icon">02</span> Reservas <small>Próximamente</small></span>
+        <a class="nav-link" href="/reservations"><span class="nav-icon">02</span> Reservas</a>
         <a class="nav-link" href="/rooms"><span class="nav-icon">03</span> Habitaciones</a>
         <a class="nav-link" href="/guests"><span class="nav-icon">04</span> Huéspedes</a>
         <a class="nav-link" href="/availability"><span class="nav-icon">05</span> Disponibilidad</a>
@@ -62,7 +62,7 @@
         <section aria-labelledby="metrics-title">
           <div class="section-heading">
             <div><h2 id="metrics-title">Indicadores clave</h2><p>Resumen actual de la operación hotelera</p></div>
-            <span class="data-label">Datos temporales</span>
+            <span class="data-label">SQL Server</span>
           </div>
           <p id="summary-error" class="inline-error" role="alert" aria-live="polite"></p>
           <div class="metrics-grid">
@@ -101,7 +101,7 @@
           <section class="panel-card quick-panel">
             <div class="section-heading compact"><div><h2>Accesos rápidos</h2><p>Funciones disponibles en esta versión</p></div></div>
             <a class="quick-link" href="/rooms"><span class="quick-symbol">01</span><span><strong>Gestionar habitaciones</strong><small>Crear, consultar y actualizar habitaciones</small></span><span class="quick-arrow">›</span></a>
-            <div class="quick-link is-disabled"><span class="quick-symbol">02</span><span><strong>Gestionar reservas</strong><small>Módulo en desarrollo</small></span><span class="quick-arrow">›</span></div>
+            <a class="quick-link" href="/reservations"><span class="quick-symbol">02</span><span><strong>Gestionar reservas</strong><small>Crear y administrar estadías</small></span><span class="quick-arrow">›</span></a>
             <a class="quick-link" href="/availability"><span class="quick-symbol">03</span><span><strong>Consultar disponibilidad</strong><small>Buscar por fechas y huéspedes</small></span><span class="quick-arrow">›</span></a>
           </section>
         </div>
