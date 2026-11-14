@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#102b46">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <title>Comprobantes | HotelReserve Pro</title>
+  <link rel="stylesheet" href="/css/receipts.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <a class="brand" href="/dashboard"><span class="brand-mark">H</span><span>HotelReserve <strong>Pro</strong></span></a>
+      <p class="nav-heading">PRINCIPAL</p>
+      <nav aria-label="Navegación principal">
+        <a class="nav-link" href="/dashboard">Panel general</a>
+        <a class="nav-link" href="/reservations">Reservas</a>
+        <a class="nav-link" href="/rooms">Habitaciones</a>
+        <a class="nav-link" href="/guests">Huéspedes</a>
+        <a class="nav-link" href="/availability">Disponibilidad</a>
+        <a class="nav-link active" href="/receipts">Comprobantes</a>
+      </nav>
+      <div class="sidebar-bottom">
+        <div class="hotel-label"><span class="hotel-dot"></span><span><strong>Hotel El Turista</strong><small>Panel de administración</small></span></div>
+        <button class="logout-button" id="logout-button" type="button">Cerrar sesión</button>
+      </div>
+    </aside>
+    <main class="main-content">
+      <header class="topbar"><button class="menu-button" id="menu-button" type="button" aria-label="Abrir menú">☰</button><div class="breadcrumb">HotelReserve Pro <span>/</span> Comprobantes</div><div class="user-details"><strong><%= user.username %></strong><small><%= user.role === 'admin' ? 'Administrador' : user.role === 'consulta' ? 'Consulta' : 'Recepción' %></small></div></header>
+      <section class="page-content">
+        <div class="page-heading"><div><p class="eyebrow">DOCUMENTOS INTERNOS</p><h1>Comprobantes</h1><p class="welcome">Consulta y reimprime comprobantes asociados a reservas existentes.</p></div></div>
+        <p id="page-message" class="page-message" role="status" aria-live="polite"></p>
+        <section class="panel-card">
+          <div class="panel-heading"><div><h2>Reservas registradas</h2><p>El comprobante utiliza la tarifa guardada en la reserva.</p></div><span class="data-label">SQL Server</span></div>
+          <div class="table-wrap">
+            <table><thead><tr><th>Huésped</th><th>Habitación</th><th>Entrada</th><th>Salida</th><th>Estado</th><th>Comprobante</th></tr></thead>
+              <tbody>
+              <% reservations.forEach((reservation) => { %>
+                <tr>
+                  <td><strong><%= reservation.guestName %></strong><small class="sub-cell"><%= reservation.documentType %> · <%= reservation.documentNumber %></small></td>
+                  <td>Hab. <%= reservation.roomNumber %></td><td><%= reservation.checkIn %></td><td><%= reservation.checkOut %></td><td><%= reservation.status %></td>
+                  <td><a class="primary-button compact-button" href="/receipts/<%= encodeURIComponent(reservation.id) %>">Ver comprobante</a></td>
+                </tr>
+              <% }) %>
+              </tbody>
+            </table>
+          </div>
+          <% if (!reservations.length) { %><div class="empty-state"><strong>Todavía no hay reservas</strong><p>Los comprobantes aparecerán aquí al registrar reservas.</p></div><% } %>
+        </section>
+      </section>
+    </main>
+  </div>
+  <script src="/js/receipts.js" defer></script>
+</body>
+</html>

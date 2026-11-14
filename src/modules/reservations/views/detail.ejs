@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#102b46">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <title>Detalle de reserva | HotelReserve Pro</title>
+  <link rel="stylesheet" href="/css/reservations.css">
+  <link rel="stylesheet" href="/css/receipts.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <a class="brand" href="/dashboard"><span class="brand-mark">H</span><span>HotelReserve <strong>Pro</strong></span></a>
+      <p class="nav-heading">PRINCIPAL</p>
+      <nav aria-label="Navegación principal">
+        <a class="nav-link" href="/dashboard">Panel general</a>
+        <a class="nav-link active" href="/reservations">Reservas</a>
+        <a class="nav-link" href="/rooms">Habitaciones</a>
+        <a class="nav-link" href="/guests">Huéspedes</a>
+        <a class="nav-link" href="/availability">Disponibilidad</a>
+        <a class="nav-link" href="/receipts">Comprobantes</a>
+      </nav>
+      <div class="sidebar-bottom">
+        <div class="hotel-label"><span class="hotel-dot"></span><span><strong>Hotel El Turista</strong><small>Panel de administración</small></span></div>
+        <button class="logout-button" id="logout-button" type="button">Cerrar sesión</button>
+      </div>
+    </aside>
+    <main class="main-content">
+      <header class="topbar"><button class="menu-button" id="menu-button" type="button" aria-label="Abrir menú">☰</button><div class="breadcrumb"><a href="/reservations">Reservas</a> <span>/</span> Detalle</div><div class="user-details"><strong><%= user.username %></strong><small><%= user.role === 'admin' ? 'Administrador' : user.role === 'consulta' ? 'Consulta' : 'Recepción' %></small></div></header>
+      <section class="page-content">
+        <div class="page-heading"><div><p class="eyebrow">ESTADÍAS DEL HOTEL</p><h1>Detalle de reserva</h1><p class="welcome"><%= reservation.id %></p></div><div class="receipt-actions"><a class="secondary-button" href="/reservations">Volver a reservas</a><a class="primary-button" href="/receipts/<%= encodeURIComponent(reservation.id) %>">Abrir comprobante</a></div></div>
+        <p id="receipt-message" class="page-message" role="status" aria-live="polite"></p>
+        <section class="panel-card">
+          <div class="receipt-facts">
+            <div><span>Huésped responsable</span><strong><%= reservation.guestName %></strong><small><%= reservation.documentType %> · <%= reservation.documentNumber %></small></div>
+            <div><span>Habitación</span><strong>Hab. <%= reservation.roomNumber %> · <%= reservation.roomType %></strong><small>Capacidad reservada: <%= reservation.guestCount %></small></div>
+            <div><span>Entrada y salida</span><strong><%= reservation.checkIn %> — <%= reservation.checkOut %></strong></div>
+            <div><span>Tarifa histórica por noche</span><strong><%= new Intl.NumberFormat('es-CO', { maximumFractionDigits: 0 }).format(reservation.ratePerNight) %> COP</strong></div>
+            <div><span>Estado</span><strong><%= ({ PENDING_DEPOSIT: 'Pendiente de anticipo', CONFIRMED: 'Confirmada', IN_PROGRESS: 'En curso', COMPLETED: 'Finalizada', CANCELLED: 'Cancelada' })[reservation.status] || reservation.status %></strong><small><%= reservation.status %></small></div>
+          </div>
+        </section>
+      </section>
+    </main>
+  </div>
+  <script src="/js/receipts.js" defer></script>
+</body>
+</html>

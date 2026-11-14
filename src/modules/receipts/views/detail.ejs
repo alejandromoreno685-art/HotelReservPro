@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#102b46">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <title>Comprobante | HotelReserve Pro</title>
+  <link rel="stylesheet" href="/css/receipts.css">
+</head>
+<body data-reservation-id="<%= receipt.reservationId %>">
+  <div class="app-shell">
+    <aside class="sidebar">
+      <a class="brand" href="/dashboard"><span class="brand-mark">H</span><span>HotelReserve <strong>Pro</strong></span></a>
+      <p class="nav-heading">PRINCIPAL</p>
+      <nav aria-label="Navegación principal">
+        <a class="nav-link" href="/dashboard">Panel general</a>
+        <a class="nav-link" href="/reservations">Reservas</a>
+        <a class="nav-link" href="/rooms">Habitaciones</a>
+        <a class="nav-link" href="/guests">Huéspedes</a>
+        <a class="nav-link" href="/availability">Disponibilidad</a>
+        <a class="nav-link active" href="/receipts">Comprobantes</a>
+      </nav>
+      <div class="sidebar-bottom"><div class="hotel-label"><span class="hotel-dot"></span><span><strong>Hotel El Turista</strong><small>Panel de administración</small></span></div><button class="logout-button" id="logout-button" type="button">Cerrar sesión</button></div>
+    </aside>
+    <main class="main-content">
+      <header class="topbar"><button class="menu-button" id="menu-button" type="button" aria-label="Abrir menú">☰</button><div class="breadcrumb">HotelReserve Pro <span>/</span> <a href="/receipts">Comprobantes</a></div><div class="user-details"><strong><%= user.username %></strong><small><%= user.role === 'admin' ? 'Administrador' : user.role === 'consulta' ? 'Consulta' : 'Recepción' %></small></div></header>
+      <section class="page-content">
+        <div class="page-heading"><div><p class="eyebrow">DOCUMENTO INTERNO · NO ES FACTURA ELECTRÓNICA</p><h1>Comprobante de estadía</h1><p class="welcome"><%= receipt.receiptId %> · Reserva <%= receipt.reservationId %></p></div><div class="receipt-actions"><a class="secondary-button" href="/api/receipts/<%= encodeURIComponent(receipt.reservationId) %>/pdf" target="_blank" rel="noopener">Vista previa PDF</a><a class="primary-button" href="/api/receipts/<%= encodeURIComponent(receipt.reservationId) %>/pdf?download=1">Descargar PDF</a></div></div>
+        <p id="receipt-message" class="page-message" role="status" aria-live="polite"></p>
+        <section class="panel-card receipt-card">
+          <div class="panel-heading"><div><h2>Detalle económico</h2><p>Los importes se calculan con datos persistidos de la reserva.</p></div><span class="data-label">COP</span></div>
+          <div class="receipt-facts">
+            <div><span>Huésped</span><strong id="guest-name"><%= receipt.guestName %></strong><small><%= receipt.documentType %> · <%= receipt.documentNumber %></small></div>
+            <div><span>Habitación</span><strong>Hab. <%= receipt.roomNumber %> · <%= receipt.roomType %></strong></div>
+            <div><span>Fechas</span><strong><%= receipt.checkIn %> — <%= receipt.checkOut %></strong><small><%= receipt.nights %> noches</small></div>
+            <div><span>Tarifa histórica / noche</span><strong class="money">$ <%= formatCop(receipt.ratePerNight) %> COP</strong></div>
+          </div>
+          <div class="money-table">
+            <div><span>Alojamiento (<%= receipt.nights %> × tarifa)</span><strong id="accommodation">$ <%= formatCop(receipt.accommodation) %> COP</strong></div>
+            <div class="subheading"><span>Consumos</span><span></span></div>
+            <div id="charge-list">
+              <% receipt.charges.forEach((charge) => { %><div><span><%= charge.description %></span><strong>$ <%= formatCop(charge.amount) %> COP</strong></div><% }) %>
+              <% if (!receipt.charges.length) { %><div><span>Sin consumos registrados</span><strong>$ 0 COP</strong></div><% } %>
+            </div>
+            <div><span>Total consumos</span><strong id="charge-total">$ <%= formatCop(receipt.chargeTotal) %> COP</strong></div>
+            <div class="total-row"><span>Total</span><strong id="total">$ <%= formatCop(receipt.total) %> COP</strong></div>
+            <div class="subheading"><span>Anticipos</span><span></span></div>
+            <div id="payment-list">
+              <% receipt.payments.forEach((payment) => { %><div><span><%= payment.description %></span><strong>$ <%= formatCop(payment.amount) %> COP</strong></div><% }) %>
+              <% if (!receipt.payments.length) { %><div><span>Sin anticipos registrados</span><strong>$ 0 COP</strong></div><% } %>
+            </div>
+            <div><span>Total anticipos</span><strong id="payment-total">$ <%= formatCop(receipt.paymentTotal) %> COP</strong></div>
+            <div class="balance-row"><span>Saldo</span><strong id="balance">$ <%= formatCop(receipt.balance) %> COP</strong></div>
+          </div>
+          <p class="receipt-note">Alojamiento = noches × tarifa por noche. Total = alojamiento + consumos. Saldo = total − anticipos. No se adicionan impuestos.</p>
+        </section>
+        <% if (receipt.status === 'CANCELLED') { %><p class="page-message">La reserva está cancelada: el comprobante se puede consultar, pero no admite nuevos consumos ni anticipos.</p><% } else { %>
+        <section class="entry-grid">
+          <form id="charge-form" class="panel-card entry-form">
+            <h2>Registrar consumo</h2>
+            <label for="charge-description">Concepto<input id="charge-description" name="description" maxlength="160" required><small class="field-error" data-field="description"></small></label>
+            <label for="charge-amount">Valor en COP<input id="charge-amount" name="amount" type="number" min="1" max="999999999999" step="1" required><small class="field-error" data-field="amount"></small></label>
+            <button class="primary-button" type="submit">Guardar consumo</button>
+          </form>
+          <form id="payment-form" class="panel-card entry-form">
+            <h2>Registrar anticipo</h2>
+            <label for="payment-description">Concepto<input id="payment-description" name="description" maxlength="160" value="Anticipo" required><small class="field-error" data-field="description"></small></label>
+            <label for="payment-amount">Valor en COP<input id="payment-amount" name="amount" type="number" min="1" max="999999999999" step="1" required><small class="field-error" data-field="amount"></small></label>
+            <button class="primary-button" type="submit">Guardar anticipo</button>
+          </form>
+        </section>
+        <% } %>
+        <div class="pdf-preview"><h2>Vista previa</h2><iframe title="Vista previa del comprobante PDF" src="/api/receipts/<%= encodeURIComponent(receipt.reservationId) %>/pdf"></iframe></div>
+      </section>
+    </main>
+  </div>
+  <script src="/js/receipts.js" defer></script>
+</body>
+</html>

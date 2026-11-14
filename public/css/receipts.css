@@ -1,0 +1,152 @@
+@import url("/css/reservations.css");
+
+.compact-button {
+  display: inline-flex;
+  padding: 9px 13px;
+  text-decoration: none;
+}
+
+.receipt-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.receipt-actions a {
+  text-decoration: none;
+}
+
+.receipt-card,
+.entry-form,
+.pdf-preview {
+  margin-bottom: 22px;
+}
+
+.receipt-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 16px;
+  padding: 20px 0;
+  border-bottom: 1px solid #e8edf2;
+}
+
+.receipt-facts div,
+.entry-form label {
+  display: grid;
+  gap: 6px;
+}
+
+.receipt-facts span,
+.receipt-facts small {
+  color: #64748b;
+  font-size: 13px;
+}
+
+.receipt-facts strong {
+  color: #102b46;
+}
+
+.money-table {
+  max-width: 760px;
+  margin: 18px 0 0 auto;
+}
+
+.money-table > div,
+.money-table #charge-list > div,
+.money-table #payment-list > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 11px 0;
+  border-bottom: 1px solid #edf1f5;
+}
+
+.money-table .subheading {
+  margin-top: 8px;
+  color: #37536d;
+  font-weight: 700;
+}
+
+.money-table .total-row,
+.money-table .balance-row {
+  color: #102b46;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.money-table .balance-row {
+  color: #17684d;
+}
+
+.receipt-note {
+  margin-top: 20px;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.entry-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 20px;
+}
+
+.entry-form {
+  display: grid;
+  gap: 14px;
+}
+
+.entry-form input {
+  width: 100%;
+}
+
+.entry-form button {
+  justify-self: start;
+}
+
+.pdf-preview iframe {
+  width: 100%;
+  min-height: 640px;
+  border: 1px solid #dbe3eb;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+@media (max-width: 640px) {
+  .receipt-actions {
+    width: 100%;
+  }
+
+  .receipt-actions a {
+    flex: 1;
+    text-align: center;
+  }
+
+  .money-table > div,
+  .money-table #charge-list > div,
+  .money-table #payment-list > div {
+    align-items: flex-start;
+  }
+
+  .pdf-preview iframe {
+    min-height: 420px;
+  }
+}
+
+/* RTF4: mensajes de validación junto al campo */
+.field-error { min-height: 0; color: #b52e3b; font-size: 10.5px; font-weight: 500; line-height: 1.35; }
+.field-error:empty { display: none; }
+[aria-invalid="true"] { border-color: #d9707a !important; box-shadow: 0 0 0 3px rgb(181 46 59 / 10%) !important; }
+.main-content { min-width: 0; }
+.panel-card, .results-card, .search-card { max-width: 100%; min-width: 0; }
+.table-wrap { max-width: 100%; }
+.loading-cell { color: #7b8995; font-style: italic; }
+.table-wrap { position: relative; } /* contiene los textos sr-only dentro del desplazamiento de la tabla */
+
+/* RTF4: las listas de consumos y anticipos son contenedores, no filas */
+.money-table #charge-list,
+.money-table #payment-list { display: block; padding: 0; }
+.entry-form { padding: 20px; }
+.entry-form h2 { margin: 0 0 4px; color: #1a344a; font-size: 17px; }
+.entry-form label { color: #455c6f; font-size: 11px; font-weight: 650; }
+.entry-form input { min-height: 39px; padding: 0 10px; border: 1px solid #dfe6eb; border-radius: 6px; background: #fff; color: #354e62; font: inherit; font-size: 12px; font-weight: 400; }
+.entry-form input:focus { border-color: #4f8b7c; outline: none; box-shadow: 0 0 0 3px rgb(79 139 124 / 12%); }
