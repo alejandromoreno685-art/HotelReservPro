@@ -47,4 +47,19 @@ function requirePageJwt(req, res, next) {
   return next();
 }
 
-module.exports = { cookieName, requireJwt, requirePageJwt };
+function requireRoles(...roles) {
+  const allowed = new Set(roles.map((role) => role.toLowerCase()));
+  return (req, res, next) => {
+    const role = req.auth && req.auth.role;
+    const normalizedRole = role === 'receptionist' ? 'recepcion' : role;
+    if (!normalizedRole || !allowed.has(normalizedRole.toLowerCase())) {
+      if (req.originalUrl.startsWith('/api/')) {
+        return res.status(403).json({ message: 'No tienes permiso para realizar esta operación.' });
+      }
+      return res.status(403).send('No tienes permiso para acceder a esta página.');
+    }
+    return next();
+  };
+}
+
+module.exports = { cookieName, requireJwt, requirePageJwt, requireRoles };

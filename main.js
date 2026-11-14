@@ -5,7 +5,7 @@ const express = require('express');
 const cookieParser = require('cookie-parser');
 const database = require('./src/database');
 const userStore = require('./src/modules/auth/models/userStore');
-const { requireJwt, requirePageJwt } = require('./src/middlewares/jwt');
+const { requireJwt, requirePageJwt, requireRoles } = require('./src/middlewares/jwt');
 const authRoutes = require('./src/modules/auth/routes/authRoutes');
 const dashboardRoutes = require('./src/modules/dashboard/routes/dashboardRoutes');
 const dashboardPageRoutes = require('./src/modules/dashboard/routes/dashboardPageRoutes');
@@ -17,6 +17,8 @@ const availabilityRoutes = require('./src/modules/availability/routes/availabili
 const availabilityPageRoutes = require('./src/modules/availability/routes/availabilityPageRoutes');
 const reservationRoutes = require('./src/modules/reservations/routes/reservationRoutes');
 const reservationPageRoutes = require('./src/modules/reservations/routes/reservationPageRoutes');
+const receiptRoutes = require('./src/modules/receipts/routes/receiptRoutes');
+const receiptPageRoutes = require('./src/modules/receipts/routes/receiptPageRoutes');
 
 const app = express();
 const modulesPath = path.join(__dirname, 'src', 'modules');
@@ -34,16 +36,18 @@ app.get('/', (req, res) => res.redirect('/dashboard'));
 app.get('/login', (req, res) => res.render('auth/views/login'));
 
 app.use('/api/auth', authRoutes);
-app.use('/api/dashboard', requireJwt, dashboardRoutes);
-app.use('/api/rooms', requireJwt, roomRoutes);
-app.use('/api/guests', requireJwt, guestRoutes);
-app.use('/api/availability', requireJwt, availabilityRoutes);
-app.use('/api/reservations', requireJwt, reservationRoutes);
-app.use('/dashboard', requirePageJwt, dashboardPageRoutes);
-app.use('/rooms', requirePageJwt, roomPageRoutes);
-app.use('/guests', requirePageJwt, guestPageRoutes);
-app.use('/availability', requirePageJwt, availabilityPageRoutes);
-app.use('/reservations', requirePageJwt, reservationPageRoutes);
+app.use('/api/dashboard', requireJwt, requireRoles('admin', 'recepcion'), dashboardRoutes);
+app.use('/api/rooms', requireJwt, requireRoles('admin', 'recepcion', 'consulta'), roomRoutes);
+app.use('/api/guests', requireJwt, requireRoles('admin', 'recepcion'), guestRoutes);
+app.use('/api/availability', requireJwt, requireRoles('admin', 'recepcion', 'consulta'), availabilityRoutes);
+app.use('/api/reservations', requireJwt, requireRoles('admin', 'recepcion'), reservationRoutes);
+app.use('/api/receipts', requireJwt, requireRoles('admin', 'recepcion'), receiptRoutes);
+app.use('/dashboard', requirePageJwt, requireRoles('admin', 'recepcion'), dashboardPageRoutes);
+app.use('/rooms', requirePageJwt, requireRoles('admin', 'recepcion', 'consulta'), roomPageRoutes);
+app.use('/guests', requirePageJwt, requireRoles('admin', 'recepcion'), guestPageRoutes);
+app.use('/availability', requirePageJwt, requireRoles('admin', 'recepcion', 'consulta'), availabilityPageRoutes);
+app.use('/reservations', requirePageJwt, requireRoles('admin', 'recepcion'), reservationPageRoutes);
+app.use('/receipts', requirePageJwt, requireRoles('admin', 'recepcion'), receiptPageRoutes);
 
 app.use('/api', (req, res) => {
   res.status(404).json({ message: 'Endpoint no encontrado.' });
@@ -53,18 +57,36 @@ app.use((req, res) => {
   res.status(404).send('Página no encontrada.');
 });
 
+const connectionErrorCodes = new Set(['ESOCKET', 'ETIMEOUT', 'ELOGIN', 'ECONNCLOSED', 'ENOTOPEN', 'ECONNRESET']);
+
+function describeError(err) {
+  if (Number.isInteger(err.statusCode)) {
+    return { statusCode: err.statusCode, message: err.statusCode < 500 ? err.message : (err.publicMessage || 'Ocurrió un error interno.') };
+  }
+  if (err.type === 'entity.parse.failed') {
+    return { statusCode: 400, message: 'El cuerpo de la solicitud no es un JSON válido.' };
+  }
+  if ([2601, 2627].includes(err.number)) {
+    return { statusCode: 409, message: 'La operación entra en conflicto con información que ya existe.' };
+  }
+  if (err.number === 547) {
+    return { statusCode: 409, message: 'La operación no se completó porque el registro está relacionado con otra información o la referencia ya no existe.' };
+  }
+  if (err.number === 1205) {
+    return { statusCode: 409, message: 'Otra operación usaba la misma información. Consulta de nuevo e inténtalo otra vez.' };
+  }
+  if (err.name === 'ConnectionError' || connectionErrorCodes.has(err.code)) {
+    return { statusCode: 500, message: 'No fue posible conectar con la base de datos. No se guardaron cambios; intenta más tarde.' };
+  }
+  return { statusCode: 500, message: 'Ocurrió un error interno.' };
+}
+
 app.use((err, req, res, next) => {
-  const statusCode = Number.isInteger(err.statusCode)
-    ? err.statusCode
-    : ([2601, 2627, 547].includes(err.number) ? 409 : 500);
-  const message = statusCode < 500
-    ? (err.number === 547
-      ? 'No se puede eliminar el registro porque tiene información relacionada.'
-      : (err.number ? 'El registro ya existe.' : err.message))
-    : 'Ocurrió un error interno.';
+  const { statusCode, message } = describeError(err);
+  // El detalle técnico queda solo en el registro del servidor, nunca en la respuesta.
   if (statusCode >= 500) console.error(err);
 
-  if (req.path.startsWith('/api/')) {
+  if (req.originalUrl.startsWith('/api/')) {
     return res.status(statusCode).json({ message });
   }
 

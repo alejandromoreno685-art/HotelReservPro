@@ -142,11 +142,14 @@ function isLocked(user) {
 
 function toPublicUser(user) {
   if (!user) return null;
+  const role = user.role === 'RECEPTIONIST' || user.role === 'RECEPCION'
+    ? 'recepcion'
+    : user.role.toLowerCase();
   return {
     id: user.id,
     username: user.username,
     name: user.displayName,
-    role: user.role.toLowerCase()
+    role
   };
 }
 

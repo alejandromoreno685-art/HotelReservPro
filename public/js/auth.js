@@ -27,7 +27,7 @@ form.addEventListener('submit', async (event) => {
       return;
     }
 
-    window.location.assign('/dashboard');
+    window.location.assign(result.user.role === 'consulta' ? '/availability' : '/dashboard');
   } catch {
     errorMessage.textContent = 'No se pudo conectar con el servidor. Intenta nuevamente.';
   } finally {

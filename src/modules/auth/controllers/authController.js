@@ -37,11 +37,12 @@ function logout(req, res) {
 }
 
 function currentUser(req, res) {
+  const role = req.auth.role === 'receptionist' ? 'recepcion' : req.auth.role.toLowerCase();
   return res.json({
     user: {
       id: req.auth.sub,
       username: req.auth.username,
-      role: req.auth.role.toLowerCase()
+      role
     }
   });
 }
