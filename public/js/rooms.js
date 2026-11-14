@@ -15,6 +15,7 @@ const logoutButton = document.querySelector('#logout-button');
 const logoutError = document.querySelector('#logout-error');
 const sidebar = document.querySelector('#sidebar');
 const mobileScrim = document.querySelector('#mobile-scrim');
+const canManageRooms = document.body.dataset.canManage === 'true';
 
 const typeLabels = {
   ESTANDAR: 'Estándar',
@@ -110,6 +111,10 @@ function createRoomRow(room) {
   const actionsCell = document.createElement('td');
   const actions = document.createElement('div');
   actions.className = 'row-actions';
+  if (!canManageRooms) {
+    row.append(roomCell, typeCell, capacityCell, rateCell, statusCell, actionsCell);
+    return row;
+  }
   const editButton = document.createElement('button');
   editButton.type = 'button';
   editButton.className = 'row-action';
@@ -240,10 +245,10 @@ async function removeRoom(room) {
   }
 }
 
-document.querySelector('#new-room-button').addEventListener('click', openCreateDialog);
-document.querySelector('#close-dialog-button').addEventListener('click', () => dialog.close());
-document.querySelector('#cancel-dialog-button').addEventListener('click', () => dialog.close());
-form.addEventListener('submit', saveRoom);
+document.querySelector('#new-room-button')?.addEventListener('click', openCreateDialog);
+document.querySelector('#close-dialog-button')?.addEventListener('click', () => dialog.close());
+document.querySelector('#cancel-dialog-button')?.addEventListener('click', () => dialog.close());
+form?.addEventListener('submit', saveRoom);
 searchInput.addEventListener('input', () => {
   clearTimeout(searchTimer);
   searchTimer = setTimeout(loadRooms, 250);

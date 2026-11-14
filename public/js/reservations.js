@@ -10,6 +10,7 @@ const formError = document.querySelector('#form-error');
 const guestSelect = document.querySelector('#guest-id');
 const roomSelect = document.querySelector('#room-id');
 const saveButton = document.querySelector('#save-reservation-button');
+const searchButton = document.querySelector('#search-rooms-button');
 const logoutButton = document.querySelector('#logout-button');
 const logoutError = document.querySelector('#logout-error');
 const sidebar = document.querySelector('#sidebar');
@@ -23,6 +24,87 @@ const statusLabels = {
 };
 const documentLabels = { CC: 'CC', CE: 'CE', PASSPORT: 'Pasaporte', TI: 'TI', NIT: 'NIT', OTHER: 'Otro' };
 let options = { guests: [], rooms: [] };
+let activeReservationKey = null;
+const hotelToday = document.body.dataset.hotelToday;
+const pendingAttemptStorageKey = 'hotelreserve-pending-reservation';
+
+function readPendingAttempt() {
+  const value = sessionStorage.getItem(pendingAttemptStorageKey);
+  if (!value) return null;
+  try {
+    return JSON.parse(value);
+  } catch {
+    sessionStorage.removeItem(pendingAttemptStorageKey);
+    return null;
+  }
+}
+
+const fieldIds = {
+  checkIn: 'check-in',
+  checkOut: 'check-out',
+  guestCount: 'guest-count',
+  guestId: 'guest-id',
+  roomId: 'room-id'
+};
+
+function setFieldError(name, message) {
+  const input = document.querySelector(`#${fieldIds[name]}`);
+  const slot = document.querySelector(`#${fieldIds[name]}-error`);
+  if (slot) slot.textContent = message;
+  if (input) input.setAttribute('aria-invalid', message ? 'true' : 'false');
+}
+
+function clearFieldErrors() {
+  for (const name of Object.keys(fieldIds)) setFieldError(name, '');
+}
+
+// Mismas reglas que el servidor; el servidor sigue siendo quien decide.
+function validateFields({ requireSelection }) {
+  clearFieldErrors();
+  const { checkIn, checkOut, guestCount } = form.elements;
+  let valid = true;
+  if (!checkIn.value) {
+    setFieldError('checkIn', 'Indica la fecha de entrada.');
+    valid = false;
+  } else if (checkIn.value < hotelToday) {
+    setFieldError('checkIn', 'La entrada no puede ser anterior a hoy.');
+    valid = false;
+  }
+  if (!checkOut.value) {
+    setFieldError('checkOut', 'Indica la fecha de salida.');
+    valid = false;
+  } else if (checkIn.value && checkOut.value <= checkIn.value) {
+    setFieldError('checkOut', 'La salida debe ser posterior a la entrada.');
+    valid = false;
+  }
+  const count = Number(guestCount.value);
+  if (!Number.isInteger(count) || count < 1 || count > 12) {
+    setFieldError('guestCount', 'Usa un número entero entre 1 y 12.');
+    valid = false;
+  }
+  if (requireSelection) {
+    if (!guestSelect.value) {
+      setFieldError('guestId', 'Selecciona el huésped responsable.');
+      valid = false;
+    }
+    if (!roomSelect.value) {
+      setFieldError('roomId', 'Consulta y selecciona una habitación disponible.');
+      valid = false;
+    }
+  }
+  return valid;
+}
+
+// Ubica el mensaje del servidor junto al campo relacionado cuando es posible.
+function showServerError(message) {
+  const text = message || '';
+  if (/entrada/i.test(text)) setFieldError('checkIn', text);
+  else if (/salida/i.test(text)) setFieldError('checkOut', text);
+  else if (/número de huéspedes|capacidad/i.test(text)) setFieldError('guestCount', text);
+  else if (/huésped/i.test(text)) setFieldError('guestId', text);
+  else if (/habitación/i.test(text)) setFieldError('roomId', text);
+  formError.textContent = text;
+}
 
 function showMessage(message, success = false) {
   pageMessage.textContent = message;
@@ -43,7 +125,11 @@ async function requestJson(url, requestOptions = {}) {
     throw new Error('La sesión expiró. Inicia sesión nuevamente.');
   }
   const result = response.status === 204 ? null : await response.json();
-  if (!response.ok) throw new Error(result?.message || 'No fue posible completar la operación.');
+  if (!response.ok) {
+    const error = new Error(result?.message || 'No fue posible completar la operación.');
+    error.status = response.status;
+    throw error;
+  }
   return result;
 }
 
@@ -91,6 +177,12 @@ function reservationRow(reservation) {
   const actionsCell = document.createElement('td');
   const actions = document.createElement('div');
   actions.className = 'row-actions';
+  addAction(actions, 'Detalle', () => {
+    window.location.assign(`/reservations/${encodeURIComponent(reservation.id)}`);
+  });
+  addAction(actions, 'Comprobante', () => {
+    window.location.assign(`/receipts/${encodeURIComponent(reservation.id)}`);
+  });
   if (reservation.status === 'PENDING_DEPOSIT') {
     addAction(actions, 'Confirmar', () => changeStatus(reservation, 'CONFIRMED'));
   }
@@ -108,6 +200,12 @@ function formatDate(value) {
 }
 
 async function loadReservations() {
+  emptyState.hidden = true;
+  tableBody.replaceChildren();
+  const loadingRow = document.createElement('tr');
+  const loadingCell = addCell(loadingRow, 'Cargando reservas...', 'loading-cell');
+  loadingCell.colSpan = 7;
+  tableBody.append(loadingRow);
   try {
     const status = statusFilter.value;
     const query = status ? `?status=${encodeURIComponent(status)}` : '';
@@ -121,6 +219,10 @@ async function loadReservations() {
         : 'Crea una reserva para verla en este listado.';
     }
   } catch (error) {
+    tableBody.replaceChildren();
+    emptyState.hidden = false;
+    emptyTitle.textContent = 'No se pudieron cargar las reservas';
+    emptyDescription.textContent = `${error.message} Actualiza la página para intentarlo de nuevo.`;
     showMessage(error.message);
   }
 }
@@ -139,22 +241,20 @@ async function loadOptions() {
 
 function resetForm() {
   form.reset();
+  activeReservationKey = null;
   form.elements.guestCount.value = '1';
-  const today = new Date();
-  const tomorrow = new Date(today);
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  form.elements.checkIn.value = localDateValue(today);
-  form.elements.checkOut.value = localDateValue(tomorrow);
+  form.elements.checkIn.value = hotelToday;
+  form.elements.checkOut.value = addHotelDays(hotelToday, 1);
   formError.textContent = '';
+  clearFieldErrors();
   roomSelect.disabled = true;
   roomSelect.replaceChildren(new Option('Consulta primero las fechas', ''));
 }
 
-function localDateValue(date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
+function addHotelDays(value, days) {
+  const date = new Date(`${value}T00:00:00.000Z`);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
 }
 
 async function openCreateDialog() {
@@ -162,6 +262,17 @@ async function openCreateDialog() {
   try {
     await loadOptions();
     dialog.showModal();
+    const pending = readPendingAttempt();
+    if (pending) {
+      activeReservationKey = pending.key;
+      for (const [name, value] of Object.entries(pending.payload)) {
+        if (form.elements[name]) form.elements[name].value = String(value);
+      }
+      await searchAvailableRooms();
+      roomSelect.value = pending.payload.roomId;
+      formError.textContent = 'Se conservó la solicitud anterior. Verifica su resultado antes de crear otra.';
+      return;
+    }
     form.elements.checkIn.focus();
   } catch (error) {
     showMessage(error.message);
@@ -169,6 +280,12 @@ async function openCreateDialog() {
 }
 
 async function searchAvailableRooms() {
+  if (!validateFields({ requireSelection: false })) {
+    formError.textContent = 'Revisa los campos marcados.';
+    return;
+  }
+  searchButton.disabled = true;
+  searchButton.textContent = 'Consultando...';
   formError.textContent = '';
   roomSelect.disabled = true;
   roomSelect.replaceChildren(new Option('Buscando...', ''));
@@ -195,10 +312,13 @@ async function searchAvailableRooms() {
       ));
     }
     roomSelect.disabled = rooms.length === 0;
-    if (rooms.length === 0) formError.textContent = 'No hay habitaciones disponibles para esos criterios.';
+    if (rooms.length === 0) setFieldError('roomId', 'No hay habitaciones disponibles para esas fechas y huéspedes.');
   } catch (error) {
     roomSelect.replaceChildren(new Option('No fue posible cargar habitaciones', ''));
-    formError.textContent = error.message;
+    showServerError(error.message);
+  } finally {
+    searchButton.disabled = false;
+    searchButton.textContent = 'Consultar habitaciones disponibles';
   }
 }
 
@@ -209,8 +329,14 @@ async function createReservation(event) {
     return;
   }
   formError.textContent = '';
+  if (!validateFields({ requireSelection: true })) {
+    formError.textContent = 'Revisa los campos marcados.';
+    return;
+  }
+  if (saveButton.disabled) return;
   saveButton.disabled = true;
   saveButton.textContent = 'Guardando...';
+  if (!activeReservationKey) activeReservationKey = crypto.randomUUID();
   const body = {
     guestId: guestSelect.value,
     roomId: roomSelect.value,
@@ -218,14 +344,42 @@ async function createReservation(event) {
     checkOut: form.elements.checkOut.value,
     guestCount: Number(form.elements.guestCount.value)
   };
+  sessionStorage.setItem(pendingAttemptStorageKey, JSON.stringify({
+    key: activeReservationKey,
+    payload: body
+  }));
 
   try {
-    await requestJson('/api/reservations', { method: 'POST', body: JSON.stringify(body) });
+    await requestJson('/api/reservations', {
+      method: 'POST',
+      headers: { 'Idempotency-Key': activeReservationKey },
+      body: JSON.stringify(body)
+    });
     dialog.close();
+    sessionStorage.removeItem(pendingAttemptStorageKey);
+    activeReservationKey = null;
     showMessage('La reserva se creó en estado pendiente.', true);
     await loadReservations();
   } catch (error) {
-    formError.textContent = error.message;
+    try {
+      const { reservation } = await requestJson(
+        `/api/reservations/idempotency/${encodeURIComponent(activeReservationKey)}`
+      );
+      dialog.close();
+      sessionStorage.removeItem(pendingAttemptStorageKey);
+      activeReservationKey = null;
+      showMessage(`La reserva ${reservation.id} ya estaba guardada; se consultó su resultado.`, true);
+      await loadReservations();
+    } catch (reconciliationError) {
+      if (reconciliationError.status === 404) {
+        // No existe una reserva con esta clave: la solicitud no se guardó.
+        sessionStorage.removeItem(pendingAttemptStorageKey);
+        activeReservationKey = null;
+        showServerError(error.message);
+      } else {
+        formError.textContent = `${error.message} No se pudo verificar el resultado; conserva esta solicitud y consulta las reservas antes de reintentar.`;
+      }
+    }
   } finally {
     saveButton.disabled = false;
     saveButton.textContent = 'Crear reserva';
@@ -258,16 +412,45 @@ async function cancelReservation(reservation) {
   }
 }
 
+async function reconcilePendingAttempt() {
+  const pending = readPendingAttempt();
+  if (!pending) return;
+  try {
+    const { reservation } = await requestJson(
+      `/api/reservations/idempotency/${encodeURIComponent(pending.key)}`
+    );
+    sessionStorage.removeItem(pendingAttemptStorageKey);
+    showMessage(`La reserva ${reservation.id} ya estaba guardada; se consultó su resultado.`, true);
+    await loadReservations();
+  } catch (error) {
+    if (error.status !== 404) {
+      showMessage('No se pudo verificar una solicitud anterior. Conserva el intento y consulta las reservas antes de volver a enviarlo.');
+    }
+  }
+}
+
 document.querySelector('#new-reservation-button').addEventListener('click', openCreateDialog);
 document.querySelector('#close-dialog-button').addEventListener('click', () => dialog.close());
 document.querySelector('#cancel-dialog-button').addEventListener('click', () => dialog.close());
 document.querySelector('#search-rooms-button').addEventListener('click', searchAvailableRooms);
 form.addEventListener('submit', createReservation);
 statusFilter.addEventListener('change', loadReservations);
+// Cambiar fechas o huéspedes invalida la lista de habitaciones consultada.
 for (const name of ['checkIn', 'checkOut', 'guestCount']) {
   form.elements[name].addEventListener('change', () => {
+    activeReservationKey = null;
+    sessionStorage.removeItem(pendingAttemptStorageKey);
+    setFieldError(name, '');
     roomSelect.disabled = true;
     roomSelect.replaceChildren(new Option('Consulta otra vez las fechas', ''));
+  });
+}
+// Elegir huésped o habitación solo cambia la solicitud (nueva clave), no la lista.
+for (const name of ['guestId', 'roomId']) {
+  form.elements[name].addEventListener('change', () => {
+    activeReservationKey = null;
+    sessionStorage.removeItem(pendingAttemptStorageKey);
+    setFieldError(name, '');
   });
 }
 document.querySelector('#logout-button').addEventListener('click', async () => {
@@ -292,3 +475,4 @@ document.querySelector('#menu-button').addEventListener('click', () => {
 });
 mobileScrim.addEventListener('click', closeMenu);
 loadReservations();
+reconcilePendingAttempt();

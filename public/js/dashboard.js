@@ -14,6 +14,33 @@ dateElement.textContent = new Intl.DateTimeFormat('es-CO', {
   year: 'numeric'
 }).format(new Date());
 
+const activityList = document.querySelector('#activity-list');
+const activityEmpty = document.querySelector('#activity-empty');
+const statusLabels = {
+  PENDING_DEPOSIT: 'Pendiente',
+  CONFIRMED: 'Confirmada',
+  IN_PROGRESS: 'En curso',
+  COMPLETED: 'Finalizada',
+  CANCELLED: 'Cancelada'
+};
+
+function renderActivity(items) {
+  activityList.replaceChildren(...items.map((item) => {
+    const row = document.createElement('li');
+    const link = document.createElement('a');
+    link.href = `/reservations/${encodeURIComponent(item.id)}`;
+    const title = document.createElement('strong');
+    title.textContent = `${item.guestName} · Hab. ${item.roomNumber}`;
+    const detail = document.createElement('small');
+    detail.textContent = `${item.checkIn} → ${item.checkOut} · ${statusLabels[item.status] || item.status}`;
+    link.append(title, detail);
+    row.append(link);
+    return row;
+  }));
+  activityList.hidden = items.length === 0;
+  activityEmpty.hidden = items.length > 0;
+}
+
 async function loadSummary() {
   try {
     const response = await fetch('/api/dashboard/summary', { credentials: 'same-origin' });
@@ -28,6 +55,7 @@ async function loadSummary() {
       const value = summary[element.dataset.metric];
       element.textContent = typeof value === 'number' ? value.toLocaleString('es-CO') : '—';
     }
+    renderActivity(summary.recentActivity || []);
   } catch (error) {
     for (const element of metricElements) element.textContent = '—';
     summaryError.textContent = 'No se pudo cargar el resumen. Actualiza la página para intentarlo nuevamente.';

@@ -8,20 +8,20 @@
   <title>Habitaciones | HotelReserve Pro</title>
   <link rel="stylesheet" href="/css/rooms.css">
 </head>
-<body>
+<body data-can-manage="<%= canManageRooms %>" data-role="<%= user.role %>">
   <div class="app-shell">
     <aside class="sidebar" id="sidebar">
-      <a class="brand" href="/dashboard" aria-label="HotelReserve Pro, inicio">
+      <a class="brand" href="<%= user.role === 'consulta' ? '/availability' : '/dashboard' %>" aria-label="HotelReserve Pro, inicio">
         <span class="brand-mark" aria-hidden="true">H</span>
         <span>HotelReserve <strong>Pro</strong></span>
       </a>
       <p class="nav-heading">PRINCIPAL</p>
       <nav aria-label="Navegación principal">
-        <a class="nav-link" href="/dashboard"><span class="nav-icon">01</span> Panel general</a>
-        <a class="nav-link" href="/reservations"><span class="nav-icon">02</span> Reservas</a>
+        <% if (user.role !== 'consulta') { %><a class="nav-link" href="/dashboard"><span class="nav-icon">01</span> Panel general</a><a class="nav-link" href="/reservations"><span class="nav-icon">02</span> Reservas</a><% } %>
         <a class="nav-link active" href="/rooms"><span class="nav-icon">03</span> Habitaciones</a>
-        <a class="nav-link" href="/guests"><span class="nav-icon">04</span> Huéspedes</a>
+        <% if (user.role !== 'consulta') { %><a class="nav-link" href="/guests"><span class="nav-icon">04</span> Huéspedes</a><% } %>
         <a class="nav-link" href="/availability"><span class="nav-icon">05</span> Disponibilidad</a>
+        <% if (user.role !== 'consulta') { %><a class="nav-link" href="/receipts"><span class="nav-icon">06</span> Comprobantes</a><% } %>
       </nav>
       <div class="sidebar-bottom">
         <div class="hotel-label">
@@ -39,7 +39,7 @@
         <div class="breadcrumb">HotelReserve Pro <span>/</span> Habitaciones</div>
         <div class="user-menu">
           <span class="user-avatar">A</span>
-          <span class="user-details"><strong><%= user.username %></strong><small><%= user.role === 'admin' ? 'Administrador' : 'Recepcionista' %></small></span>
+          <span class="user-details"><strong><%= user.username %></strong><small><%= user.role === 'admin' ? 'Administrador' : user.role === 'consulta' ? 'Consulta' : 'Recepción' %></small></span>
         </div>
       </header>
 
@@ -48,9 +48,9 @@
           <div>
             <p class="eyebrow">INVENTARIO DEL HOTEL</p>
             <h1>Habitaciones</h1>
-            <p class="welcome">Administra tipos, capacidad, tarifa y estado físico de tus habitaciones.</p>
+            <p class="welcome"><%= canManageRooms ? 'Administra tipos, capacidad, tarifa y estado físico de tus habitaciones.' : 'Consulta las características generales de las habitaciones.' %></p>
           </div>
-          <button class="primary-button" id="new-room-button" type="button"><span aria-hidden="true">＋</span> Nueva habitación</button>
+          <% if (canManageRooms) { %><button class="primary-button" id="new-room-button" type="button"><span aria-hidden="true">＋</span> Nueva habitación</button><% } %>
         </div>
 
         <section class="summary-grid" aria-label="Resumen de habitaciones">
@@ -110,7 +110,7 @@
   </div>
   <div class="mobile-scrim" id="mobile-scrim"></div>
 
-  <dialog class="room-dialog" id="room-dialog" aria-labelledby="form-title">
+  <% if (canManageRooms) { %><dialog class="room-dialog" id="room-dialog" aria-labelledby="form-title">
     <form id="room-form">
       <div class="dialog-heading">
         <div><p class="eyebrow">INVENTARIO DEL HOTEL</p><h2 id="form-title">Nueva habitación</h2></div>
@@ -154,7 +154,7 @@
         <button class="primary-button" id="save-room-button" type="submit">Guardar habitación</button>
       </div>
     </form>
-  </dialog>
+  </dialog><% } %>
   <script src="/js/rooms.js" defer></script>
 </body>
 </html>

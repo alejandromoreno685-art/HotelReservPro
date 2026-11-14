@@ -19,6 +19,7 @@
         <a class="nav-link" href="/rooms"><span class="nav-icon">03</span> Habitaciones</a>
         <a class="nav-link active" href="/guests"><span class="nav-icon">04</span> Huéspedes</a>
         <a class="nav-link" href="/availability"><span class="nav-icon">05</span> Disponibilidad</a>
+        <a class="nav-link" href="/receipts"><span class="nav-icon">06</span> Comprobantes</a>
       </nav>
       <div class="sidebar-bottom">
         <div class="hotel-label"><span class="hotel-dot"></span><span><strong>Hotel El Turista</strong><small>Panel de administración</small></span></div>
@@ -31,7 +32,7 @@
       <header class="topbar">
         <button class="menu-button" id="menu-button" type="button" aria-label="Abrir menú">☰</button>
         <div class="breadcrumb">HotelReserve Pro <span>/</span> Huéspedes</div>
-        <div class="user-menu"><span class="user-avatar">A</span><span class="user-details"><strong><%= user.username %></strong><small><%= user.role === 'admin' ? 'Administrador' : 'Recepcionista' %></small></span></div>
+        <div class="user-menu"><span class="user-avatar">A</span><span class="user-details"><strong><%= user.username %></strong><small><%= user.role === 'admin' ? 'Administrador' : user.role === 'consulta' ? 'Consulta' : 'Recepción' %></small></span></div>
       </header>
       <section class="page-content">
         <div class="page-heading">

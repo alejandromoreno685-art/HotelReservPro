@@ -626,3 +626,8 @@ a {
     align-items: flex-start;
   }
 }
+.activity-list { display: grid; gap: 6px; margin: 0; padding: 4px 0 0; list-style: none; }
+.activity-list a { display: grid; gap: 3px; padding: 10px 12px; border: 1px solid #edf0f3; border-radius: 7px; color: #1a344a; text-decoration: none; }
+.activity-list a:hover { border-color: #cfe3dd; background: #f6faf9; }
+.activity-list strong { font-size: 12px; }
+.activity-list small { color: #7b8995; font-size: 11px; }

@@ -13,10 +13,7 @@ const logoutError = document.querySelector('#logout-error');
 const sidebar = document.querySelector('#sidebar');
 const mobileScrim = document.querySelector('#mobile-scrim');
 
-const today = new Date();
-const localDate = new Date(today.getTime() - today.getTimezoneOffset() * 60000)
-  .toISOString()
-  .slice(0, 10);
+const localDate = document.body.dataset.hotelToday;
 checkInInput.min = localDate;
 checkOutInput.min = localDate;
 checkInInput.value = localDate;
@@ -34,6 +31,48 @@ checkInInput.addEventListener('change', () => {
     checkOutInput.value = '';
   }
 });
+
+function setFieldError(id, message) {
+  const slot = document.querySelector(`#${id}-error`);
+  const input = document.querySelector(`#${id}`);
+  if (slot) slot.textContent = message;
+  if (input) input.setAttribute('aria-invalid', message ? 'true' : 'false');
+}
+
+function validateSearch() {
+  for (const id of ['check-in', 'check-out', 'guest-count']) setFieldError(id, '');
+  let valid = true;
+  if (!checkInInput.value) {
+    setFieldError('check-in', 'Indica la fecha de entrada.');
+    valid = false;
+  } else if (checkInInput.value < localDate) {
+    setFieldError('check-in', 'La entrada no puede ser anterior a hoy.');
+    valid = false;
+  }
+  if (!checkOutInput.value) {
+    setFieldError('check-out', 'Indica la fecha de salida.');
+    valid = false;
+  } else if (checkInInput.value && checkOutInput.value <= checkInInput.value) {
+    setFieldError('check-out', 'La salida debe ser posterior a la entrada.');
+    valid = false;
+  }
+  const count = Number(form.elements.guestCount.value);
+  if (!Number.isInteger(count) || count < 1 || count > 12) {
+    setFieldError('guest-count', 'Usa un número entero entre 1 y 12.');
+    valid = false;
+  }
+  return valid;
+}
+
+// Un fallo del servidor no debe verse como "sin habitaciones".
+function showSearchError(message) {
+  resultsList.replaceChildren();
+  emptyState.hidden = false;
+  resultCount.textContent = 'Error';
+  emptyTitle.textContent = 'No se pudo completar la consulta';
+  emptyDescription.textContent = 'El resultado no está disponible por un problema del servicio. Intenta nuevamente; esto no significa que no haya habitaciones.';
+  pageMessage.textContent = message;
+}
 
 function showRoom(room) {
   const item = document.createElement('article');
@@ -77,7 +116,9 @@ function displayDate(date) {
 async function search(event) {
   event.preventDefault();
   pageMessage.textContent = '';
+  if (!validateSearch()) return;
   searchButton.disabled = true;
+  resultCount.textContent = 'Consultando...';
   searchButton.textContent = 'Consultando...';
 
   const params = new URLSearchParams({
@@ -94,6 +135,16 @@ async function search(event) {
       return;
     }
     const result = await response.json();
+    if (response.status === 400) {
+      // Error de datos: se muestra junto al campo y se conservan los valores.
+      const message = result.message || 'Revisa los datos de la búsqueda.';
+      if (/entrada/i.test(message)) setFieldError('check-in', message);
+      else if (/salida|fechas/i.test(message)) setFieldError('check-out', message);
+      else if (/huéspedes/i.test(message)) setFieldError('guest-count', message);
+      pageMessage.textContent = message;
+      resultCount.textContent = 'Sin consulta';
+      return;
+    }
     if (!response.ok) throw new Error(result.message || 'No fue posible consultar la disponibilidad.');
 
     const { rooms, criteria } = result;
@@ -107,7 +158,7 @@ async function search(event) {
     document.querySelector('#results-title').textContent =
       `Disponibles del ${displayDate(criteria.checkIn)} al ${displayDate(criteria.checkOut)}`;
   } catch (error) {
-    pageMessage.textContent = error.message;
+    showSearchError(error.message);
   } finally {
     searchButton.disabled = false;
     searchButton.textContent = 'Consultar disponibilidad';

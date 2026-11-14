@@ -22,7 +22,7 @@
         <a class="nav-link" href="/rooms"><span class="nav-icon">03</span> Habitaciones</a>
         <a class="nav-link" href="/guests"><span class="nav-icon">04</span> Huéspedes</a>
         <a class="nav-link" href="/availability"><span class="nav-icon">05</span> Disponibilidad</a>
-        <span class="nav-link disabled"><span class="nav-icon">05</span> Pagos <small>Próximamente</small></span>
+        <a class="nav-link" href="/receipts"><span class="nav-icon">06</span> Comprobantes</a>
       </nav>
       <div class="sidebar-bottom">
         <div class="hotel-label">
@@ -40,7 +40,7 @@
         <div class="breadcrumb">HotelReserve Pro <span>/</span> Panel general</div>
         <div class="user-menu">
           <span class="user-avatar">A</span>
-          <span class="user-details"><strong><%= user.username %></strong><small><%= user.role === 'admin' ? 'Administrador' : 'Recepcionista' %></small></span>
+          <span class="user-details"><strong><%= user.username %></strong><small><%= user.role === 'admin' ? 'Administrador' : user.role === 'consulta' ? 'Consulta' : 'Recepción' %></small></span>
         </div>
       </header>
 
@@ -56,7 +56,7 @@
 
         <div class="status-banner">
           <span class="status-indicator"></span>
-          <div><strong>Gestión de habitaciones disponible</strong><p>Administra habitaciones y sus estados físicos desde el menú lateral.</p></div>
+          <div><strong>Reservas, disponibilidad y comprobantes disponibles</strong><p>Los indicadores se calculan con los datos guardados en SQL Server.</p></div>
         </div>
 
         <section aria-labelledby="metrics-title">
@@ -84,7 +84,7 @@
             </article>
             <article class="metric-card">
               <div class="metric-top"><span>Habitaciones ocupadas</span><span class="metric-icon violet">O</span></div>
-              <strong class="metric-value" data-metric="occupiedRooms">—</strong><span class="metric-note">En uso actualmente</span>
+              <strong class="metric-value" data-metric="occupiedRooms">—</strong><span class="metric-note">Reservas en curso (IN_PROGRESS)</span>
             </article>
             <article class="metric-card">
               <div class="metric-top"><span>En mantenimiento</span><span class="metric-icon amber">M</span></div>
@@ -96,12 +96,14 @@
         <div class="lower-grid">
           <section class="panel-card">
             <div class="section-heading compact"><div><h2>Actividad reciente</h2><p>Últimos movimientos del sistema</p></div></div>
-            <div class="empty-state"><span class="empty-mark">—</span><strong>Sin actividad por ahora</strong><p>Cuando registres operaciones, aparecerán aquí.</p></div>
+            <ul class="activity-list" id="activity-list" hidden></ul>
+            <div class="empty-state" id="activity-empty"><span class="empty-mark">—</span><strong>Sin actividad por ahora</strong><p>Cuando registres reservas, aparecerán aquí.</p></div>
           </section>
           <section class="panel-card quick-panel">
             <div class="section-heading compact"><div><h2>Accesos rápidos</h2><p>Funciones disponibles en esta versión</p></div></div>
             <a class="quick-link" href="/rooms"><span class="quick-symbol">01</span><span><strong>Gestionar habitaciones</strong><small>Crear, consultar y actualizar habitaciones</small></span><span class="quick-arrow">›</span></a>
             <a class="quick-link" href="/reservations"><span class="quick-symbol">02</span><span><strong>Gestionar reservas</strong><small>Crear y administrar estadías</small></span><span class="quick-arrow">›</span></a>
+            <a class="quick-link" href="/receipts"><span class="quick-symbol">04</span><span><strong>Comprobantes</strong><small>Consultar, registrar movimientos y descargar PDF</small></span><span class="quick-arrow">›</span></a>
             <a class="quick-link" href="/availability"><span class="quick-symbol">03</span><span><strong>Consultar disponibilidad</strong><small>Buscar por fechas y huéspedes</small></span><span class="quick-arrow">›</span></a>
           </section>
         </div>

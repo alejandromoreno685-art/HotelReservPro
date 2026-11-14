@@ -7,8 +7,9 @@
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <title>Reservas | HotelReserve Pro</title>
   <link rel="stylesheet" href="/css/reservations.css">
+  <link rel="stylesheet" href="/css/receipts.css">
 </head>
-<body>
+<body data-hotel-today="<%= hotelToday %>">
   <div class="app-shell">
     <aside class="sidebar" id="sidebar">
       <a class="brand" href="/dashboard"><span class="brand-mark">H</span><span>HotelReserve <strong>Pro</strong></span></a>
@@ -19,6 +20,7 @@
         <a class="nav-link" href="/rooms"><span class="nav-icon">03</span> Habitaciones</a>
         <a class="nav-link" href="/guests"><span class="nav-icon">04</span> Huéspedes</a>
         <a class="nav-link" href="/availability"><span class="nav-icon">05</span> Disponibilidad</a>
+        <a class="nav-link" href="/receipts"><span class="nav-icon">06</span> Comprobantes</a>
       </nav>
       <div class="sidebar-bottom">
         <div class="hotel-label"><span class="hotel-dot"></span><span><strong>Hotel El Turista</strong><small>Panel de administración</small></span></div>
@@ -30,7 +32,7 @@
       <header class="topbar">
         <button class="menu-button" id="menu-button" type="button" aria-label="Abrir menú">☰</button>
         <div class="breadcrumb">HotelReserve Pro <span>/</span> Reservas</div>
-        <div class="user-menu"><span class="user-avatar">A</span><span class="user-details"><strong><%= user.username %></strong><small><%= user.role === 'admin' ? 'Administrador' : 'Recepcionista' %></small></span></div>
+        <div class="user-menu"><span class="user-avatar">A</span><span class="user-details"><strong><%= user.username %></strong><small><%= user.role === 'admin' ? 'Administrador' : user.role === 'consulta' ? 'Consulta' : 'Recepción' %></small></span></div>
       </header>
       <section class="page-content">
         <div class="page-heading">
@@ -39,7 +41,7 @@
         </div>
         <p id="page-message" class="page-message" role="status" aria-live="polite"></p>
         <section class="panel-card" aria-labelledby="reservations-title">
-          <div class="panel-heading"><div><h2 id="reservations-title">Listado de reservas</h2><p>Las reservas pendientes y confirmadas bloquean la habitación para el período.</p></div><span class="data-label">SQL Server</span></div>
+          <div class="panel-heading"><div><h2 id="reservations-title">Listado de reservas</h2><p>PENDING_DEPOSIT, CONFIRMED e IN_PROGRESS bloquean la habitación para el período.</p></div><span class="data-label">SQL Server</span></div>
           <div class="filters">
             <label class="filter-field" for="status-filter"><span>Estado</span>
               <select id="status-filter">
@@ -71,11 +73,11 @@
       <div class="dialog-heading"><div><p class="eyebrow">ESTADÍAS DEL HOTEL</p><h2 id="form-title">Nueva reserva</h2></div><button class="icon-button" id="close-dialog-button" type="button" aria-label="Cerrar formulario">×</button></div>
       <p class="dialog-intro">Selecciona fechas y huéspedes para consultar habitaciones operativas sin cruces de reserva.</p>
       <div class="form-grid">
-        <label for="check-in">Fecha de entrada<input id="check-in" name="checkIn" type="date" required></label>
-        <label for="check-out">Fecha de salida<input id="check-out" name="checkOut" type="date" required></label>
-        <label for="guest-count">Cantidad de huéspedes<input id="guest-count" name="guestCount" type="number" min="1" max="12" value="1" required></label>
-        <label for="guest-id">Huésped responsable<select id="guest-id" name="guestId" required><option value="">Cargando huéspedes...</option></select></label>
-        <label class="wide" for="room-id">Habitación disponible<select id="room-id" name="roomId" required disabled><option value="">Consulta primero las fechas</option></select></label>
+        <label for="check-in">Fecha de entrada<input id="check-in" name="checkIn" type="date" min="<%= hotelToday %>" required aria-describedby="check-in-error"><small class="field-error" id="check-in-error" aria-live="polite"></small></label>
+        <label for="check-out">Fecha de salida<input id="check-out" name="checkOut" type="date" min="<%= hotelToday %>" required aria-describedby="check-out-error"><small class="field-error" id="check-out-error" aria-live="polite"></small></label>
+        <label for="guest-count">Cantidad de huéspedes<input id="guest-count" name="guestCount" type="number" min="1" max="12" step="1" value="1" required aria-describedby="guest-count-error"><small class="field-error" id="guest-count-error" aria-live="polite"></small></label>
+        <label for="guest-id">Huésped responsable<select id="guest-id" name="guestId" required><option value="">Cargando huéspedes...</option></select><small class="field-error" id="guest-id-error" aria-live="polite"></small></label>
+        <label class="wide" for="room-id">Habitación disponible<select id="room-id" name="roomId" required disabled><option value="">Consulta primero las fechas</option></select><small class="field-error" id="room-id-error" aria-live="polite"></small></label>
       </div>
       <button class="secondary-button search-rooms-button" id="search-rooms-button" type="button">Consultar habitaciones disponibles</button>
       <p class="form-error" id="form-error" role="alert" aria-live="polite"></p>

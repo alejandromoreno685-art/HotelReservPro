@@ -120,3 +120,13 @@ td { height: 58px; color: #667989; font-size: 10px; }
   .wide { grid-column: auto; }
   .reservation-dialog form { padding: 18px; }
 }
+
+/* RTF4: mensajes de validación junto al campo */
+.field-error { min-height: 0; color: #b52e3b; font-size: 10.5px; font-weight: 500; line-height: 1.35; }
+.field-error:empty { display: none; }
+[aria-invalid="true"] { border-color: #d9707a !important; box-shadow: 0 0 0 3px rgb(181 46 59 / 10%) !important; }
+.main-content { min-width: 0; }
+.panel-card, .results-card, .search-card { max-width: 100%; min-width: 0; }
+.table-wrap { max-width: 100%; }
+.loading-cell { color: #7b8995; font-style: italic; }
+.table-wrap { position: relative; } /* contiene los textos sr-only dentro del desplazamiento de la tabla */
