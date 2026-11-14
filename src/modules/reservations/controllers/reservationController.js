@@ -8,8 +8,17 @@ async function get(req, res) {
   return res.json({ reservation: await reservationService.getReservation(req.params.id) });
 }
 
+async function getByRequestKey(req, res) {
+  return res.json({
+    reservation: await reservationService.getReservationByRequestKey(req.params.key)
+  });
+}
+
 async function create(req, res) {
-  const reservation = await reservationService.createReservation(req.body);
+  const reservation = await reservationService.createReservation(
+    req.body,
+    req.get('Idempotency-Key')
+  );
   return res.status(201).json({ reservation });
 }
 
@@ -34,4 +43,13 @@ async function availableRooms(req, res) {
   return res.json(await reservationService.availableRooms(req.query));
 }
 
-module.exports = { list, get, create, updateStatus, cancel, options, availableRooms };
+module.exports = {
+  list,
+  get,
+  getByRequestKey,
+  create,
+  updateStatus,
+  cancel,
+  options,
+  availableRooms
+};

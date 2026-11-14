@@ -1,5 +1,6 @@
 const availabilityModel = require('../models/availabilityModel');
 const { roomTypes } = require('../../rooms/services/roomService');
+const { hotelToday } = require('../../../hotelDate');
 
 class AvailabilityError extends Error {
   constructor(message) {
@@ -26,7 +27,7 @@ function normalizeCriteria(input) {
     throw new AvailabilityError('Ingresa fechas válidas de entrada y salida.');
   }
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = hotelToday();
   if (checkIn < today) {
     throw new AvailabilityError('La fecha de entrada no puede ser anterior a hoy.');
   }

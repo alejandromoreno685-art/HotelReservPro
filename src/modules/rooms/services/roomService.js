@@ -1,4 +1,5 @@
 const roomModel = require('../models/roomModel');
+const { isUuid } = require('../../../validation');
 
 const roomTypes = ['ESTANDAR', 'DOBLE', 'FAMILIAR', 'SUITE'];
 const roomStatuses = ['DISPONIBLE', 'EN_LIMPIEZA', 'MANTENIMIENTO', 'FUERA_DE_SERVICIO'];
@@ -90,6 +91,7 @@ async function listRooms(filters) {
 }
 
 async function getRoom(id) {
+  if (!isUuid(id)) throw new RoomError('No se encontró la habitación.', 404);
   const room = await roomModel.findById(id);
   if (!room) throw new RoomError('No se encontró la habitación.', 404);
   return room;
@@ -104,6 +106,7 @@ async function createRoom(input) {
 }
 
 async function updateRoom(id, input) {
+  if (!isUuid(id)) throw new RoomError('No se encontró la habitación.', 404);
   const currentRoom = await roomModel.findById(id);
   if (!currentRoom) throw new RoomError('No se encontró la habitación.', 404);
 
@@ -115,7 +118,16 @@ async function updateRoom(id, input) {
 }
 
 async function deleteRoom(id) {
-  const room = await roomModel.remove(id);
+  if (!isUuid(id)) throw new RoomError('No se encontró la habitación.', 404);
+  let room;
+  try {
+    room = await roomModel.remove(id);
+  } catch (error) {
+    if (error.number === 547) {
+      throw new RoomError('No se puede eliminar la habitación porque tiene reservas asociadas.', 409);
+    }
+    throw error;
+  }
   if (!room) throw new RoomError('No se encontró la habitación.', 404);
   return room;
 }

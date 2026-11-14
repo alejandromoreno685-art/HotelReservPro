@@ -1,17 +1,20 @@
-const { randomUUID } = require('node:crypto');
+const { createHash, randomUUID } = require('node:crypto');
 const database = require('../../../database');
 const guestModel = require('../../guests/models/guestModel');
 const roomModel = require('../../rooms/models/roomModel');
+const { hotelToday } = require('../../../hotelDate');
 
 const testMode = process.env.NODE_ENV === 'test';
 const reservations = new Map();
+const idempotencyRequests = new Map();
 const activeStatuses = ['PENDING_DEPOSIT', 'CONFIRMED', 'IN_PROGRESS'];
 const reservationColumns = `res.id, res.guest_id AS guestId, res.room_id AS roomId,
   res.check_in AS checkIn, res.check_out AS checkOut, res.guest_count AS guestCount,
   res.status, res.created_at AS createdAt,
   g.full_name AS guestName, g.document_type AS documentType,
   g.document_number AS documentNumber,
-  r.room_number AS roomNumber, r.room_type AS roomType, r.rate AS ratePerNight`;
+  r.room_number AS roomNumber, r.room_type AS roomType,
+  res.rate_per_night AS ratePerNight`;
 
 function dateValue(value) {
   return value instanceof Date ? value.toISOString().slice(0, 10) : String(value).slice(0, 10);
@@ -69,7 +72,7 @@ async function list(filters = {}) {
       documentNumber: guest.documentNumber,
       roomNumber: room.number,
       roomType: room.type,
-      ratePerNight: room.rate
+      ratePerNight: item.ratePerNight
     };
   }));
   return records
@@ -96,6 +99,25 @@ async function findById(id) {
   return records.find((item) => item.id === id) || null;
 }
 
+async function findIdempotent(idempotencyKey, fingerprint) {
+  if (!testMode) {
+    const result = await database.query(
+      `SELECT reservation_id AS reservationId, request_fingerprint AS fingerprint
+       FROM dbo.ReservationRequests
+       WHERE idempotency_key = @idempotencyKey`,
+      { idempotencyKey }
+    );
+    const record = result.recordset[0];
+    if (!record) return null;
+    return { reservationId: record.reservationId, fingerprint: record.fingerprint };
+  }
+
+  const record = idempotencyRequests.get(idempotencyKey);
+  return record && (!fingerprint || record.fingerprint === fingerprint)
+    ? { ...record }
+    : (record ? { ...record } : null);
+}
+
 async function findOverlappingRoomIds(criteria) {
   if (!testMode) {
     const result = await database.query(
@@ -113,12 +135,72 @@ async function findOverlappingRoomIds(criteria) {
     .map((reservation) => reservation.roomId);
 }
 
-async function create(data) {
+// Decide qué decirle al usuario cuando el alta falla. Antes de responder un
+// error se consulta la clave de idempotencia: si la reserva sí quedó guardada
+// (por ejemplo, falló la respuesta después del commit) se devuelve esa reserva.
+async function classifyCreateError(error, idempotencyKey, fingerprint) {
+  try {
+    const existing = await findIdempotent(idempotencyKey);
+    if (existing) {
+      if (existing.fingerprint !== fingerprint) {
+        const conflict = new Error('La clave de solicitud ya se utilizó con otros datos.');
+        conflict.code = 'IDEMPOTENCY_CONFLICT';
+        return conflict;
+      }
+      const reservation = await findById(existing.reservationId);
+      if (reservation) {
+        return Object.assign(new Error('RECONCILED'), { code: 'RECONCILED', reservation });
+      }
+    }
+  } catch (reconciliationError) {
+    error.reconciliationError = reconciliationError;
+  }
+  if ([2601, 2627].includes(error.number)) {
+    error.code = 'RESERVATION_UNIQUE_CONFLICT';
+    error.message = 'La reserva entra en conflicto con otra registrada al mismo tiempo. Consulta la disponibilidad de nuevo.';
+    return error;
+  }
+  if (error.number === 547) {
+    error.code = 'RESERVATION_REFERENCE_CONFLICT';
+    error.message = 'No se guardó la reserva: el huésped o la habitación ya no existe o cambió durante la operación.';
+    return error;
+  }
+  if (['RESERVATION_OVERLAP', 'ROOM_UNAVAILABLE', 'GUEST_NOT_FOUND', 'IDEMPOTENCY_CONFLICT'].includes(error.code)) {
+    return error;
+  }
+  // Solo un fallo durante el commit (o una reconciliación imposible) deja el
+  // resultado en duda. Antes del commit SQL Server deshace la transacción.
+  if (error.transactionPhase === 'commit' || error.transactionPhase === 'after-commit' ||
+      (error.reconciliationError && !['connect', 'begin', 'execute'].includes(error.transactionPhase))) {
+    error.code = 'RESERVATION_RESULT_UNAVAILABLE';
+    return error;
+  }
+  error.code = 'RESERVATION_NOT_SAVED';
+  return error;
+}
+
+async function create(data, { idempotencyKey, fingerprint }) {
   const id = randomUUID();
   if (!testMode) {
-    return database.withTransaction(async (query) => {
+    const createInTransaction = () => database.withTransaction(async (query) => {
+      const requestResult = await query(
+        `SELECT reservation_id AS reservationId, request_fingerprint AS fingerprint
+         FROM dbo.ReservationRequests WITH (UPDLOCK, HOLDLOCK)
+         WHERE idempotency_key = @idempotencyKey`,
+        { idempotencyKey }
+      );
+      const existingRequest = requestResult.recordset[0];
+      if (existingRequest) {
+        if (existingRequest.fingerprint !== fingerprint) {
+          const error = new Error('La clave de solicitud ya se utilizó con otros datos.');
+          error.code = 'IDEMPOTENCY_CONFLICT';
+          throw error;
+        }
+        return existingRequest.reservationId;
+      }
+
       const roomResult = await query(
-        `SELECT id, capacity, physical_status
+        `SELECT id, capacity, physical_status, rate
          FROM dbo.Rooms WITH (UPDLOCK, HOLDLOCK)
          WHERE id = @roomId`,
         { roomId: data.roomId }
@@ -140,34 +222,97 @@ async function create(data) {
         throw error;
       }
 
-      const overlapResult = await query(
-        `SELECT TOP (1) id
-         FROM dbo.Reservations WITH (UPDLOCK, HOLDLOCK)
-         WHERE room_id = @roomId
-           AND status IN ('PENDING_DEPOSIT', 'CONFIRMED', 'IN_PROGRESS')
-           AND check_in < @checkOut AND check_out > @checkIn`,
-        {
-          roomId: data.roomId,
-          checkIn: data.checkIn,
-          checkOut: data.checkOut
+      // Revalidación dentro de la transacción serializable: aunque la
+      // disponibilidad se consultó antes, aquí se bloquea el rango de la habitación.
+      if (!database.isFailpointActive('reservation.skip-overlap-check')) {
+        const overlapResult = await query(
+          `SELECT TOP (1) id
+           FROM dbo.Reservations WITH (UPDLOCK, HOLDLOCK)
+           WHERE room_id = @roomId
+             AND status IN ('PENDING_DEPOSIT', 'CONFIRMED', 'IN_PROGRESS')
+             AND check_in < @checkOut AND check_out > @checkIn`,
+          {
+            roomId: data.roomId,
+            checkIn: data.checkIn,
+            checkOut: data.checkOut
+          }
+        );
+        if (overlapResult.recordset.length > 0) {
+          const error = new Error('La habitación ya fue reservada para parte de ese período.');
+          error.code = 'RESERVATION_OVERLAP';
+          throw error;
         }
-      );
-      if (overlapResult.recordset.length > 0) {
-        const error = new Error('La habitación ya fue reservada para parte de ese período.');
-        error.code = 'RESERVATION_OVERLAP';
-        throw error;
       }
 
+      // Laboratorio CP-23: referencia de huésped inexistente para que el motor
+      // rechace el INSERT con su llave foránea real (error 547).
+      const guestIdForInsert = database.isFailpointActive('reservation.invalid-guest-fk')
+        ? randomUUID()
+        : data.guestId;
       await query(
         `INSERT INTO dbo.Reservations
-          (id, guest_id, room_id, check_in, check_out, guest_count, status)
-         VALUES (@id, @guestId, @roomId, @checkIn, @checkOut, @guestCount, 'PENDING_DEPOSIT')`,
-        { id, ...data }
+          (id, guest_id, room_id, check_in, check_out, guest_count, rate_per_night, status)
+         VALUES (@id, @guestId, @roomId, @checkIn, @checkOut, @guestCount, @rate, 'PENDING_DEPOSIT')`,
+        { id, ...data, guestId: guestIdForInsert, rate: room.rate }
       );
+      database.failpoint('reservation.after-insert');
+      const requestInsert = `INSERT INTO dbo.ReservationRequests
+          (idempotency_key, reservation_id, request_fingerprint)
+         VALUES (@idempotencyKey, @reservationId, @fingerprint)`;
+      await query(requestInsert, { idempotencyKey, reservationId: id, fingerprint });
+      if (database.isFailpointActive('reservation.duplicate-request-2627')) {
+        // Laboratorio CP-22: repetir la clave primaria provoca el error real 2627.
+        await query(requestInsert, { idempotencyKey, reservationId: randomUUID(), fingerprint });
+      }
       return id;
-    }).then(() => findById(id));
+    });
+
+    let reservationId;
+    for (let attempt = 1; ; attempt += 1) {
+      try {
+        reservationId = await createInTransaction();
+        break;
+      } catch (error) {
+        // 1205: SQL Server eligió esta transacción como víctima de un
+        // interbloqueo y ya la deshizo. Se reintenta de forma segura.
+        if (error.number === 1205 && attempt < 3) continue;
+        const classified = await classifyCreateError(error, idempotencyKey, fingerprint);
+        if (classified.code === 'RECONCILED') return classified.reservation;
+        throw classified;
+      }
+    }
+
+    try {
+      const reservation = await findById(reservationId);
+      if (reservation) return reservation;
+      const error = new Error('No fue posible verificar la reserva guardada.');
+      error.code = 'RESERVATION_RESULT_UNAVAILABLE';
+      throw error;
+    } catch (error) {
+      if (error.code === 'RESERVATION_RESULT_UNAVAILABLE') throw error;
+      try {
+        const existing = await findIdempotent(idempotencyKey);
+        if (existing && existing.fingerprint === fingerprint) {
+          const reservation = await findById(existing.reservationId);
+          if (reservation) return reservation;
+        }
+      } catch (reconciliationError) {
+        error.reconciliationError = reconciliationError;
+      }
+      error.code = 'RESERVATION_RESULT_UNAVAILABLE';
+      throw error;
+    }
   }
 
+  const existingRequest = await findIdempotent(idempotencyKey);
+  if (existingRequest) {
+    if (existingRequest.fingerprint !== fingerprint) {
+      const error = new Error('La clave de solicitud ya se utilizó con otros datos.');
+      error.code = 'IDEMPOTENCY_CONFLICT';
+      throw error;
+    }
+    return findById(existingRequest.reservationId);
+  }
   const room = await roomModel.findById(data.roomId);
   const guest = await guestModel.findById(data.guestId);
   if (!guest) {
@@ -191,9 +336,11 @@ async function create(data) {
   reservations.set(id, {
     id,
     ...data,
+    ratePerNight: room.rate,
     status: 'PENDING_DEPOSIT',
     createdAt: new Date().toISOString()
   });
+  idempotencyRequests.set(idempotencyKey, { reservationId: id, fingerprint });
   return findById(id);
 }
 
@@ -227,12 +374,13 @@ async function getSummary() {
   if (!testMode) {
     const result = await database.query(
       `SELECT
-         SUM(CASE WHEN check_in = CONVERT(date, SYSUTCDATETIME())
+         SUM(CASE WHEN check_in = @today
                        AND status IN ('PENDING_DEPOSIT', 'CONFIRMED', 'IN_PROGRESS')
                   THEN 1 ELSE 0 END) AS reservationsToday,
          SUM(CASE WHEN status = 'PENDING_DEPOSIT' THEN 1 ELSE 0 END) AS pendingReservations,
          SUM(CASE WHEN status = 'IN_PROGRESS' THEN 1 ELSE 0 END) AS occupiedRooms
-       FROM dbo.Reservations`
+       FROM dbo.Reservations`,
+      { today: hotelToday() }
     );
     const summary = result.recordset[0];
     return {
@@ -242,7 +390,7 @@ async function getSummary() {
     };
   }
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = hotelToday();
   const currentReservations = [...reservations.values()];
   return {
     reservationsToday: currentReservations.filter(
@@ -256,6 +404,7 @@ async function getSummary() {
 module.exports = {
   list,
   findById,
+  findIdempotent,
   findOverlappingRoomIds,
   create,
   updateStatus,

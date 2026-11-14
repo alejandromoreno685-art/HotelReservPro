@@ -5,6 +5,7 @@ const router = express.Router();
 
 router.get('/options', reservationController.options);
 router.get('/available-rooms', reservationController.availableRooms);
+router.get('/idempotency/:key', reservationController.getByRequestKey);
 router.get('/', reservationController.list);
 router.post('/', reservationController.create);
 router.get('/:id', reservationController.get);

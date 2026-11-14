@@ -1,8 +1,11 @@
+const { createHash } = require('node:crypto');
 const guestModel = require('../../guests/models/guestModel');
 const roomModel = require('../../rooms/models/roomModel');
 const reservationModel = require('../models/reservationModel');
 const { searchAvailability } = require('../../availability/services/availabilityService');
 const { isValidCalendarDate } = require('../../availability/services/availabilityService');
+const { hotelToday } = require('../../../hotelDate');
+const { isUuid, isRequestKey } = require('../../../validation');
 
 const reservationStatuses = [
   'PENDING_DEPOSIT',
@@ -24,6 +27,8 @@ class ReservationError extends Error {
     super(message);
     this.name = 'ReservationError';
     this.statusCode = statusCode;
+    // Para errores 5xx el manejador global muestra este texto controlado.
+    if (statusCode >= 500) this.publicMessage = message;
   }
 }
 
@@ -38,10 +43,13 @@ function normalizeReservation(input) {
       typeof roomId !== 'string' || !roomId.trim()) {
     throw new ReservationError('Selecciona un huésped y una habitación.', 400);
   }
+  if (!isUuid(guestId) || !isUuid(roomId)) {
+    throw new ReservationError('El huésped o la habitación seleccionada no tiene un identificador válido.', 400);
+  }
   if (!isValidCalendarDate(checkIn) || !isValidCalendarDate(checkOut)) {
     throw new ReservationError('Ingresa fechas válidas de entrada y salida.', 400);
   }
-  const today = new Date().toISOString().slice(0, 10);
+  const today = hotelToday();
   if (checkIn < today) {
     throw new ReservationError('La fecha de entrada no puede ser anterior a hoy.', 400);
   }
@@ -64,13 +72,47 @@ async function listReservations(filters = {}) {
 }
 
 async function getReservation(id) {
+  if (!isUuid(id)) throw new ReservationError('No se encontró la reserva.', 404);
   const reservation = await reservationModel.findById(id);
   if (!reservation) throw new ReservationError('No se encontró la reserva.', 404);
   return reservation;
 }
 
-async function createReservation(input) {
+async function getReservationByRequestKey(key) {
+  if (!isRequestKey(key)) {
+    throw new ReservationError('La clave de solicitud no es válida.', 400);
+  }
+  const record = await reservationModel.findIdempotent(key.trim());
+  if (!record) throw new ReservationError('No se encontró una reserva para esa solicitud.', 404);
+  return getReservation(record.reservationId);
+}
+
+function reservationFingerprint(data) {
+  return createHash('sha256').update(JSON.stringify([
+    data.guestId,
+    data.roomId,
+    data.checkIn,
+    data.checkOut,
+    data.guestCount
+  ])).digest('hex');
+}
+
+async function createReservation(input, requestKey) {
   const data = normalizeReservation(input);
+  const idempotencyKey = typeof requestKey === 'string' && requestKey.trim()
+    ? requestKey.trim()
+    : '';
+  if (!isRequestKey(idempotencyKey)) {
+    throw new ReservationError('La solicitud requiere una clave de idempotencia válida.', 400);
+  }
+  const fingerprint = reservationFingerprint(data);
+  const previous = await reservationModel.findIdempotent(idempotencyKey);
+  if (previous) {
+    if (previous.fingerprint !== fingerprint) {
+      throw new ReservationError('La clave de solicitud ya se utilizó con otros datos.', 409);
+    }
+    return getReservation(previous.reservationId);
+  }
   const [guest, room] = await Promise.all([
     guestModel.findById(data.guestId),
     roomModel.findById(data.roomId)
@@ -85,7 +127,7 @@ async function createReservation(input) {
   }
 
   try {
-    return await reservationModel.create(data);
+    return await reservationModel.create(data, { idempotencyKey, fingerprint });
   } catch (error) {
     if (error.code === 'RESERVATION_OVERLAP') {
       throw new ReservationError(error.message, 409);
@@ -96,11 +138,31 @@ async function createReservation(input) {
     if (error.code === 'GUEST_NOT_FOUND') {
       throw new ReservationError(error.message, 404);
     }
+    if (error.code === 'IDEMPOTENCY_CONFLICT') {
+      throw new ReservationError(error.message, 409);
+    }
+    if (error.code === 'RESERVATION_UNIQUE_CONFLICT' ||
+        error.code === 'RESERVATION_REFERENCE_CONFLICT') {
+      throw new ReservationError(error.message, 409);
+    }
+    if (error.code === 'RESERVATION_NOT_SAVED') {
+      throw new ReservationError(
+        'No se guardó la reserva por un error técnico. Puedes intentarlo de nuevo.',
+        500
+      );
+    }
+    if (error.code === 'RESERVATION_RESULT_UNAVAILABLE') {
+      throw new ReservationError(
+        'La solicitud se procesó, pero no se pudo confirmar su resultado. Consulta las reservas antes de reintentar.',
+        503
+      );
+    }
     throw error;
   }
 }
 
 async function updateReservationStatus(id, nextStatus) {
+  if (!isUuid(id)) throw new ReservationError('No se encontró la reserva.', 404);
   const reservation = await reservationModel.findById(id);
   if (!reservation) throw new ReservationError('No se encontró la reserva.', 404);
   if (!reservationStatuses.includes(nextStatus)) {
@@ -123,6 +185,7 @@ async function updateReservationStatus(id, nextStatus) {
 }
 
 async function cancelReservation(id) {
+  if (!isUuid(id)) throw new ReservationError('No se encontró la reserva.', 404);
   const reservation = await reservationModel.findById(id);
   if (!reservation) throw new ReservationError('No se encontró la reserva.', 404);
   return updateReservationStatus(id, 'CANCELLED');
@@ -148,6 +211,7 @@ module.exports = {
   reservationStatuses,
   listReservations,
   getReservation,
+  getReservationByRequestKey,
   createReservation,
   updateReservationStatus,
   cancelReservation,

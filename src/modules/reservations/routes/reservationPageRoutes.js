@@ -4,5 +4,6 @@ const reservationPageController = require('../controllers/reservationPageControl
 const router = express.Router();
 
 router.get('/', reservationPageController.renderReservations);
+router.get('/:id', reservationPageController.renderReservation);
 
 module.exports = router;

@@ -1,4 +1,5 @@
 const guestModel = require('../models/guestModel');
+const { isUuid } = require('../../../validation');
 
 const documentTypes = ['CC', 'CE', 'PASSPORT', 'TI', 'NIT', 'OTHER'];
 
@@ -66,6 +67,7 @@ async function listGuests(search) {
 }
 
 async function getGuest(id) {
+  if (!isUuid(id)) throw new GuestError('No se encontró el huésped.', 404);
   const guest = await guestModel.findById(id);
   if (!guest) throw new GuestError('No se encontró el huésped.', 404);
   return guest;
@@ -80,6 +82,7 @@ async function createGuest(input) {
 }
 
 async function updateGuest(id, input) {
+  if (!isUuid(id)) throw new GuestError('No se encontró el huésped.', 404);
   const current = await guestModel.findById(id);
   if (!current) throw new GuestError('No se encontró el huésped.', 404);
   const guest = normalizeGuest(input, current);
@@ -91,7 +94,16 @@ async function updateGuest(id, input) {
 }
 
 async function deleteGuest(id) {
-  const guest = await guestModel.remove(id);
+  if (!isUuid(id)) throw new GuestError('No se encontró el huésped.', 404);
+  let guest;
+  try {
+    guest = await guestModel.remove(id);
+  } catch (error) {
+    if (error.number === 547) {
+      throw new GuestError('No se puede eliminar el huésped porque tiene reservas asociadas.', 409);
+    }
+    throw error;
+  }
   if (!guest) throw new GuestError('No se encontró el huésped.', 404);
   return guest;
 }
