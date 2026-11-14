@@ -84,6 +84,15 @@ test('returns matching operational rooms and rejects invalid date criteria', asy
   assert.equal(resultResponse.status, 200);
   const result = await resultResponse.json();
   assert.deepEqual(result.rooms.map((room) => room.number), ['701']);
+  const emptyQuery = new URLSearchParams({
+    checkIn,
+    checkOut,
+    guestCount: '1',
+    roomType: 'ESTANDAR'
+  });
+  const emptyResponse = await fetch(`${baseUrl}/api/availability?${emptyQuery}`, { headers: { cookie } });
+  assert.equal(emptyResponse.status, 200);
+  assert.deepEqual((await emptyResponse.json()).rooms, []);
 
   const invalidDate = await fetch(
     `${baseUrl}/api/availability?checkIn=2028-02-30&checkOut=2028-03-01&guestCount=2`,

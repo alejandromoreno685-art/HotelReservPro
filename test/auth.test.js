@@ -1,7 +1,9 @@
 const { after, before, test } = require('node:test');
 const assert = require('node:assert/strict');
+const jwt = require('jsonwebtoken');
 process.env.NODE_ENV = 'test';
 const app = require('../main');
+const { jwtSecret, tokenIssuer } = require('../src/security');
 
 let server;
 let baseUrl;
@@ -23,6 +25,21 @@ test('rejects dashboard API requests without a JWT', async () => {
   assert.equal(response.status, 401);
 });
 
+test('rejects missing, expired, and altered API tokens with 401', async () => {
+  const expiredToken = jwt.sign(
+    { sub: 'test-user', username: 'test-user', role: 'admin' },
+    jwtSecret,
+    { algorithm: 'HS256', issuer: tokenIssuer, expiresIn: -1 }
+  );
+  const alteredToken = `${expiredToken.slice(0, -1)}x`;
+  for (const token of [expiredToken, alteredToken]) {
+    const response = await fetch(`${baseUrl}/api/dashboard/summary`, {
+      headers: { authorization: `Bearer ${token}` }
+    });
+    assert.equal(response.status, 401);
+  }
+});
+
 test('renders the login view and serves its module stylesheet', async () => {
   const pageResponse = await fetch(`${baseUrl}/login`);
   const page = await pageResponse.text();
@@ -42,12 +59,35 @@ test('redirects unauthenticated page requests to login', async () => {
 });
 
 test('rejects an incorrect administrator password', async () => {
-  const response = await fetch(`${baseUrl}/api/auth/login`, {
+  const badPassword = await fetch(`${baseUrl}/api/auth/login`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ username: 'admin', password: 'incorrecta' })
   });
-  assert.equal(response.status, 401);
+  const unknownUser = await fetch(`${baseUrl}/api/auth/login`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ username: 'usuario-inexistente', password: 'incorrecta' })
+  });
+  assert.equal(badPassword.status, 401);
+  assert.equal(unknownUser.status, 401);
+  assert.deepEqual(await unknownUser.json(), await badPassword.json());
+});
+
+test('rejects each missing credential field without creating a session', async () => {
+  for (const credentials of [
+    { username: '', password: 'valor' },
+    { username: 'admin', password: '' },
+    { username: '', password: '' }
+  ]) {
+    const response = await fetch(`${baseUrl}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(credentials)
+    });
+    assert.equal(response.status, 400);
+    assert.equal(response.headers.get('set-cookie'), null);
+  }
 });
 
 test('authenticates the administrator and returns only temporary dashboard data', async () => {

@@ -5,7 +5,10 @@
   "scripts": {
     "start": "node main.js",
     "dev": "node --watch main.js",
-    "test": "node --test"
+    "test": "node --test",
+    "test:sqlserver": "node scripts/rtf4-evidence.js",
+    "test:ui": "node scripts/rtf4-ui.js",
+    "seed:rtf4": "node scripts/seed-rtf4.js"
   },
   "keywords": [],
   "author": "",
@@ -19,5 +22,8 @@
     "jsonwebtoken": "^9.0.3",
     "mssql": "^12.7.4",
     "sweetalert": "^2.1.2"
+  },
+  "devDependencies": {
+    "playwright-core": "^1.49.1"
   }
 }
