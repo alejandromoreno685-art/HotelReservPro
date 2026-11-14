@@ -21,7 +21,7 @@ Copy-Item .env.example .env
 Antes de iniciar la app:
 
 1. Abre `database/HotelReservePro.sql` en SQL Server Management Studio (SSMS).
-2. Cambia `REPLACE_WITH_A_STRONG_PASSWORD` por una contraseña segura y ejecuta
+2. Activa **SQLCMD Mode** en SSMS. Cambia `REPLACE_WITH_A_STRONG_PASSWORD` por una contraseña segura y ejecuta
    todo el script conectado a tu instancia de SQL Server. El script crea la base
    `HotelReservePro`, las tablas y el login de aplicación `hotelreserve_app`.
    Si ya habías creado la base con una versión anterior del script, ejecútalo
@@ -47,14 +47,9 @@ script, omite su bloque `CREATE LOGIN` y asigna a ese login el usuario de la bas
 con permisos `db_datareader` y `db_datawriter`; actualiza entonces `DB_USER` y
 `DB_PASSWORD` con sus credenciales.
 
-Acceso inicial:
-
-- Usuario: `admin`
-- Contraseña: `admin123`
-
-Puedes definir `ADMIN_USER` y `ADMIN_PASSWORD` en `.env`. La cuenta inicial se
-guarda en SQL Server y se crea con un hash `scrypt`; si ya existe, su contraseña
-no se reemplaza automáticamente. Cambia la clave antes de exponer la app.
+Define `ADMIN_USER` y `ADMIN_PASSWORD` localmente en `.env`; no compartas ni
+commitas ese archivo. La cuenta inicial se guarda en SQL Server y se crea con un
+hash `scrypt`; si ya existe, su contraseña no se reemplaza automáticamente.
 
 Para producción configura `NODE_ENV=production` y un `JWT_SECRET` aleatorio de
 al menos 32 bytes. En ese entorno las cookies JWT se envían con el atributo
@@ -107,6 +102,12 @@ src/
       routes/
       services/
       views/
+    receipts/
+      controllers/
+      models/
+      routes/
+      services/
+      views/
 public/
   css/       # Hoja de estilos independiente por módulo
   js/        # JavaScript del frontend
@@ -124,13 +125,42 @@ La API de autenticación está en `/api/auth` (`POST /login`, `POST /logout` y
 `GET /me`). El dashboard está en `/dashboard`; huéspedes en `/guests` y
 `/api/guests`; habitaciones en `/rooms` y `/api/rooms`; consulta de disponibilidad
 en `/availability` y `GET /api/availability`; reservas en `/reservations` y
-`/api/reservations`. Las rutas están protegidas por JWT. El módulo de reservas
-permite crear y consultar estadías, confirmar las pendientes y cancelar
-reservas pendientes o confirmadas. Valida las fechas, la capacidad y los
-solapamientos de habitación. La consulta de disponibilidad excluye reservas
-activas; crear una reserva valida de nuevo el intervalo dentro de una
-transacción serializable para evitar sobreventas concurrentes. Los estados
-`IN_PROGRESS` y `COMPLETED` quedan para el futuro módulo de check-in/check-out.
+`/api/reservations`. Las rutas están protegidas por JWT. El módulo de reservas permite crear y consultar estadías, confirmar las
+pendientes y cancelar reservas pendientes o confirmadas. Valida las fechas
+según `America/Bogota`, la capacidad y los solapamientos de habitación. Las
+solicitudes de creación requieren `Idempotency-Key` y conservan su resultado
+para poder reconciliar reintentos. La consulta de disponibilidad excluye
+reservas activas; crear una reserva valida de nuevo el intervalo dentro de una
+transacción serializable. Los estados `IN_PROGRESS` y `COMPLETED` no tienen
+transiciones de entrada habilitadas; en particular CONFIRMED → IN_PROGRESS
+responde 409. Por tanto, check-in/check-out todavía no se pueden completar.
+
+El módulo de comprobantes genera una vista y un PDF interno enlazado con una
+reserva. Conserva la tarifa al crearla y calcula alojamiento = noches × tarifa,
+total = alojamiento + consumos y saldo = total − anticipos, sin impuestos
+añadidos. Cargos y anticipos se almacenan en SQL Server y no se modifican al
+reimprimir.
+
+Roles: ADMIN tiene acceso completo; RECEPCION y el rol histórico RECEPTIONIST
+tienen acceso a huéspedes, disponibilidad, reservas y comprobantes; CONSULTA
+solo puede leer habitaciones y disponibilidad. La gestión de habitaciones se
+reserva a ADMIN. El esquema actual no incluye administración de usuarios.
+
+## Base de datos exclusiva para RTF4
+
+Para no utilizar la base operacional, abre `database/HotelReservePro.sql` en
+SSMS con SQLCMD Mode activado y cambia la variable `DatabaseName` de la primera
+línea a `HotelReservePro_Test` antes de ejecutar. El script es aditivo y no
+elimina tablas ni registros. Aplica también `migrations/001_RTF4_Receipts.sql`
+conectado a `HotelReservePro_Test`. Configura `DB_NAME=HotelReservePro_Test`
+solo en el `.env` local. El script de seed y la integración HTTP verifican tanto
+el nombre de la base como `RTF4_SQLSERVER_TEST=1` antes de operar.
+
+Genera contraseñas locales de pruebas para ADMIN, RECEPCION y CONSULTA en las
+variables `RTF4_ADMIN_PASSWORD`, `RTF4_RECEPTION_PASSWORD` y
+`RTF4_CONSULTA_PASSWORD`. No se incluyen credenciales en el repositorio ni en
+el entorno Postman de ejemplo. Ejecuta el seed y la integración conforme a
+`docs/rtf4/README.md`.
 
 El JWT se firma con HS256 y se guarda en una cookie `HttpOnly` con
 `SameSite=Strict`. Las contraseñas incorrectas bloquean la cuenta durante 15
@@ -144,4 +174,6 @@ npm test
 
 Las pruebas ejercitan autenticación, bloqueo de cuenta, rutas protegidas,
 huéspedes, habitaciones, reservas, transiciones de estado, validación de fechas,
-límites de intervalos y disponibilidad con almacenes en memoria y mocks SQL.
+límites de intervalos, comprobantes PDF y disponibilidad con almacenes en
+memoria y mocks SQL. La integración con SQL Server real y los resultados de
+RTF4 están documentados en `docs/rtf4/README.md`.
