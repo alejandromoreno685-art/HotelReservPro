@@ -1,0 +1,191 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="940" viewBox="0 0 1400 940" font-family="Calibri, Arial, sans-serif">
+  <defs>
+    <marker id="f" markerWidth="11" markerHeight="9" refX="10" refY="4.5" orient="auto"><path d="M0,0 L11,4.5 L0,9 z" fill="#1a344a"/></marker>
+    <marker id="fi" markerWidth="11" markerHeight="9" refX="10" refY="4.5" orient="auto"><path d="M0,0 L11,4.5 L0,9 z" fill="#7a3fb0"/></marker>
+    <style>
+      .t{font-size:15px;font-weight:700;fill:#1a344a}
+      .s{font-size:12.5px;fill:#3d5467}
+      .m{font-size:11.5px;fill:#5b6b78}
+      .n{font-size:13px;font-weight:700;fill:#fff}
+      .lab{font-size:12px;fill:#1a344a}
+      .labi{font-size:12px;fill:#7a3fb0}
+    </style>
+  </defs>
+  <rect width="1400" height="940" fill="#fff"/>
+  <text x="700" y="34" text-anchor="middle" font-size="22" font-weight="700" fill="#173b59">Arquitectura del arnés de pruebas con IA — HotelReserve Pro</text>
+  <text x="700" y="56" text-anchor="middle" class="m">Diagrama de bloques (estilo C4, nivel de contenedores). Los números indican el orden del flujo de ejecución.</text>
+
+  <!-- Actores / disparadores -->
+  <rect x="30" y="80" width="230" height="150" rx="10" fill="#f4f6f8" stroke="#8a97a3"/>
+  <text x="145" y="104" text-anchor="middle" class="t">Equipo y requisitos</text>
+  <text x="45" y="130" class="s">• Desarrollador: push o pull request</text>
+  <text x="45" y="152" class="s">• Jira: HU-001, 002, 004, 005</text>
+  <text x="45" y="174" class="s">• Criterios A01–A16 y CP-01..32</text>
+  <text x="45" y="196" class="s">  → catalogo-requisitos.json</text>
+  <text x="45" y="218" class="s">• Revisión humana de propuestas</text>
+
+  <!-- Pipeline -->
+  <rect x="300" y="80" width="1070" height="150" rx="10" fill="#eef3f8" stroke="#173b59" stroke-width="2"/>
+  <text x="318" y="104" class="t">4 · Pipeline CI/CD — GitHub Actions (.github/workflows/harness.yml)</text>
+  <g>
+    <rect x="318" y="118" width="190" height="96" rx="8" fill="#fff" stroke="#9fb3c8"/>
+    <text x="413" y="140" text-anchor="middle" class="t" font-size="13">Etapa 1</text>
+    <text x="413" y="160" text-anchor="middle" class="s">Pruebas unitarias</text>
+    <text x="413" y="178" text-anchor="middle" class="m">npm test (mocks)</text>
+    <text x="413" y="196" text-anchor="middle" class="m">36 pruebas</text>
+    <rect x="520" y="118" width="200" height="96" rx="8" fill="#fff" stroke="#9fb3c8"/>
+    <text x="620" y="140" text-anchor="middle" class="t" font-size="13">Etapa 2</text>
+    <text x="620" y="160" text-anchor="middle" class="s">Preparar ambiente</text>
+    <text x="620" y="178" text-anchor="middle" class="m">SQL Server en contenedor</text>
+    <text x="620" y="196" text-anchor="middle" class="m">migraciones + seed</text>
+    <rect x="732" y="118" width="200" height="96" rx="8" fill="#fff" stroke="#9fb3c8"/>
+    <text x="832" y="140" text-anchor="middle" class="t" font-size="13">Etapa 3</text>
+    <text x="832" y="160" text-anchor="middle" class="s">Ejecutar suites</text>
+    <text x="832" y="178" text-anchor="middle" class="m">API 95 · Newman 37</text>
+    <text x="832" y="196" text-anchor="middle" class="m">Interfaz 13</text>
+    <rect x="944" y="118" width="200" height="96" rx="8" fill="#fff" stroke="#9fb3c8"/>
+    <text x="1044" y="140" text-anchor="middle" class="t" font-size="13">Etapa 4</text>
+    <text x="1044" y="160" text-anchor="middle" class="s">Compuerta de calidad</text>
+    <text x="1044" y="178" text-anchor="middle" class="m">falla si hay variantes</text>
+    <text x="1044" y="196" text-anchor="middle" class="m">no aprobadas</text>
+    <rect x="1156" y="118" width="200" height="96" rx="8" fill="#f6effc" stroke="#b892dc"/>
+    <text x="1256" y="140" text-anchor="middle" class="t" font-size="13">Etapa 5 (si falla)</text>
+    <text x="1256" y="160" text-anchor="middle" class="s">IA clasifica fallos</text>
+    <text x="1256" y="178" text-anchor="middle" class="m">y publica artefactos</text>
+    <text x="1256" y="196" text-anchor="middle" class="m">resumen + evidencias</text>
+    <line x1="508" y1="166" x2="518" y2="166" stroke="#1a344a" stroke-width="2" marker-end="url(#f)"/>
+    <line x1="720" y1="166" x2="730" y2="166" stroke="#1a344a" stroke-width="2" marker-end="url(#f)"/>
+    <line x1="932" y1="166" x2="942" y2="166" stroke="#1a344a" stroke-width="2" marker-end="url(#f)"/>
+    <line x1="1144" y1="166" x2="1154" y2="166" stroke="#1a344a" stroke-width="2" marker-end="url(#f)"/>
+  </g>
+
+  <!-- Módulo IA -->
+  <rect x="30" y="290" width="330" height="360" rx="10" fill="#f6effc" stroke="#7a3fb0" stroke-width="2"/>
+  <text x="195" y="316" text-anchor="middle" class="t" fill="#5a2a86">2 · Módulo de IA</text>
+  <text x="195" y="336" text-anchor="middle" class="m">scripts/ai/testAssistant.js · Claude Opus 5.5 (API)</text>
+  <rect x="48" y="352" width="294" height="118" rx="8" fill="#fff" stroke="#b892dc"/>
+  <text x="62" y="374" class="t" font-size="13.5">Generador de casos</text>
+  <text x="62" y="395" class="s">Entrada: HU, criterios y CP existentes</text>
+  <text x="62" y="414" class="s">Salida estructurada (JSON validado)</text>
+  <text x="62" y="433" class="s">Valores límite, seguridad, concurrencia</text>
+  <text x="62" y="452" class="s">Guarda: descarta HU/criterio inválidos</text>
+  <rect x="48" y="482" width="294" height="118" rx="8" fill="#fff" stroke="#b892dc"/>
+  <text x="62" y="504" class="t" font-size="13.5">Clasificador de fallos</text>
+  <text x="62" y="525" class="s">Entrada: resultados.json (no aprobados)</text>
+  <text x="62" y="544" class="s">Defecto · prueba frágil · ambiente ·</text>
+  <text x="62" y="563" class="s">datos de prueba · requisito ambiguo</text>
+  <text x="62" y="582" class="s">Sugiere defecto en Jira y severidad</text>
+  <text x="195" y="630" text-anchor="middle" class="m">Sin fallos no se llama a la IA (costo cero)</text>
+
+  <!-- Test harness -->
+  <rect x="400" y="290" width="560" height="360" rx="10" fill="#eef5f3" stroke="#2c6b5b" stroke-width="2"/>
+  <text x="680" y="316" text-anchor="middle" class="t" fill="#1f5a4b">3 · Test Harness (arnés de ejecución)</text>
+  <rect x="418" y="332" width="256" height="92" rx="8" fill="#fff" stroke="#8fc0b2"/>
+  <text x="432" y="354" class="t" font-size="13.5">Test runner</text>
+  <text x="432" y="375" class="s">node:test (npm test)</text>
+  <text x="432" y="394" class="s">Ejecutores RTF4 con compuerta</text>
+  <text x="432" y="413" class="s">de salida para CI</text>
+  <rect x="686" y="332" width="256" height="92" rx="8" fill="#fff" stroke="#8fc0b2"/>
+  <text x="700" y="354" class="t" font-size="13.5">Drivers</text>
+  <text x="700" y="375" class="s">Clientes HTTP (rtf4-evidence.js)</text>
+  <text x="700" y="394" class="s">Newman (colección Postman)</text>
+  <text x="700" y="413" class="s">Playwright + Chrome (rtf4-ui.js)</text>
+  <rect x="418" y="436" width="256" height="92" rx="8" fill="#fff" stroke="#8fc0b2"/>
+  <text x="432" y="458" class="t" font-size="13.5">Stubs y mocks</text>
+  <text x="432" y="479" class="s">Almacenes en memoria (NODE_ENV=test)</text>
+  <text x="432" y="498" class="s">Mocks de consultas SQL</text>
+  <text x="432" y="517" class="s">Cliente de IA simulado</text>
+  <rect x="686" y="436" width="256" height="92" rx="8" fill="#fff" stroke="#8fc0b2"/>
+  <text x="700" y="458" class="t" font-size="13.5">Fixtures</text>
+  <text x="700" y="479" class="s">seed-rtf4.js: usuarios, huéspedes,</text>
+  <text x="700" y="498" class="s">habitaciones ficticias; restauración</text>
+  <text x="700" y="517" class="s">Credenciales efímeras por ejecución</text>
+  <rect x="418" y="540" width="256" height="92" rx="8" fill="#fff" stroke="#8fc0b2"/>
+  <text x="432" y="562" class="t" font-size="13.5">Inyección de fallos</text>
+  <text x="432" y="583" class="s">Puntos de fallo de laboratorio:</text>
+  <text x="432" y="602" class="s">begin, commit, 2601, 2627, 547, PDF</text>
+  <text x="432" y="621" class="s">Solo con el perfil de pruebas</text>
+  <rect x="686" y="540" width="256" height="92" rx="8" fill="#fff" stroke="#8fc0b2"/>
+  <text x="700" y="562" class="t" font-size="13.5">Oráculos y registro</text>
+  <text x="700" y="583" class="s">Esperado vs observado por variante</text>
+  <text x="700" y="602" class="s">Consulta posterior a SQL Server</text>
+  <text x="700" y="621" class="s">resultados.json · http-log · capturas</text>
+
+  <!-- SUT -->
+  <rect x="1000" y="290" width="370" height="360" rx="10" fill="#fff8ec" stroke="#b07a18" stroke-width="2"/>
+  <text x="1185" y="316" text-anchor="middle" class="t" fill="#7a5410">1 · Sistema bajo prueba (SUT)</text>
+  <rect x="1020" y="334" width="330" height="140" rx="8" fill="#fff" stroke="#d9b26b"/>
+  <text x="1034" y="356" class="t" font-size="13.5">HotelReserve Pro</text>
+  <text x="1034" y="377" class="s">Node.js 22 · Express · EJS · JWT</text>
+  <text x="1034" y="396" class="s">Módulos: auth, disponibilidad,</text>
+  <text x="1034" y="415" class="s">reservas, huéspedes, habitaciones,</text>
+  <text x="1034" y="434" class="s">comprobantes (PDF)</text>
+  <text x="1034" y="453" class="s">Roles ADMIN · RECEPCION · CONSULTA</text>
+  <rect x="1020" y="490" width="330" height="140" rx="8" fill="#fff" stroke="#d9b26b"/>
+  <text x="1034" y="512" class="t" font-size="13.5">SQL Server 2022</text>
+  <text x="1034" y="533" class="s">Base aislada HotelReservePro_Test</text>
+  <text x="1034" y="552" class="s">Transacción serializable, idempotencia,</text>
+  <text x="1034" y="571" class="s">índice único filtrado, llaves foráneas</text>
+  <text x="1034" y="590" class="s">Local o contenedor efímero en CI</text>
+  <line x1="1185" y1="474" x2="1185" y2="488" stroke="#1a344a" stroke-width="2" marker-end="url(#f)"/>
+
+  <!-- Reportes -->
+  <rect x="300" y="700" width="1070" height="200" rx="10" fill="#f4f6f8" stroke="#8a97a3"/>
+  <text x="318" y="726" class="t">5 · Reportes y retroalimentación</text>
+  <rect x="318" y="742" width="250" height="140" rx="8" fill="#fff" stroke="#c2ccd5"/>
+  <text x="332" y="764" class="t" font-size="13.5">Evidencias</text>
+  <text x="332" y="785" class="s">resultados.md / .json</text>
+  <text x="332" y="804" class="s">http-log sin contraseñas</text>
+  <text x="332" y="823" class="s">Capturas y PDF</text>
+  <text x="332" y="842" class="s">Artefacto del pipeline (14 días)</text>
+  <rect x="582" y="742" width="250" height="140" rx="8" fill="#fff" stroke="#c2ccd5"/>
+  <text x="596" y="764" class="t" font-size="13.5">Métricas de calidad</text>
+  <text x="596" y="785" class="s">Aprobadas / ejecutadas por capa</text>
+  <text x="596" y="804" class="s">JUnit de Newman</text>
+  <text x="596" y="823" class="s">Resumen en la página del pipeline</text>
+  <text x="596" y="842" class="s">Criterios A01–A16 verificados</text>
+  <rect x="846" y="742" width="250" height="140" rx="8" fill="#fff" stroke="#c2ccd5"/>
+  <text x="860" y="764" class="t" font-size="13.5">Jira</text>
+  <text x="860" y="785" class="s">CP vinculados a cada HU</text>
+  <text x="860" y="804" class="s">Defectos DEF-NN sugeridos por IA</text>
+  <text x="860" y="823" class="s">Cierre solo con evidencia</text>
+  <text x="860" y="842" class="s">aprobada</text>
+  <rect x="1110" y="742" width="246" height="140" rx="8" fill="#f6effc" stroke="#b892dc"/>
+  <text x="1124" y="764" class="t" font-size="13.5">Propuestas de IA</text>
+  <text x="1124" y="785" class="s">reports/ia/*.md y *.json</text>
+  <text x="1124" y="804" class="s">Casos nuevos y clasificaciones</text>
+  <text x="1124" y="823" class="s">pendientes de revisión humana</text>
+  <text x="1124" y="842" class="s">antes de entrar a la matriz</text>
+
+  <!-- Flechas principales -->
+  <line x1="260" y1="150" x2="296" y2="150" stroke="#1a344a" stroke-width="2.2" marker-end="url(#f)"/>
+  <text x="264" y="140" class="lab">push</text>
+  <line x1="145" y1="230" x2="145" y2="286" stroke="#7a3fb0" stroke-width="2.2" marker-end="url(#fi)"/>
+  <text x="152" y="262" class="labi">catálogo de requisitos</text>
+  <line x1="360" y1="410" x2="396" y2="410" stroke="#7a3fb0" stroke-width="2.2" marker-end="url(#fi)"/>
+  <text x="362" y="400" class="labi">casos</text>
+  <line x1="832" y1="230" x2="832" y2="286" stroke="#1a344a" stroke-width="2.2" marker-end="url(#f)"/>
+  <text x="840" y="262" class="lab">invoca suites</text>
+  <line x1="942" y1="380" x2="996" y2="380" stroke="#1a344a" stroke-width="2.2" marker-end="url(#f)"/>
+  <text x="979" y="368" text-anchor="middle" font-size="11" fill="#1a344a">HTTP/UI</text>
+  <line x1="996" y1="636" x2="944" y2="636" stroke="#1a344a" stroke-width="2.2" marker-end="url(#f)"/>
+  <text x="980" y="672" text-anchor="middle" class="lab">respuesta + datos</text>
+  <line x1="680" y1="650" x2="680" y2="696" stroke="#1a344a" stroke-width="2.2" marker-end="url(#f)"/>
+  <text x="688" y="680" class="lab">resultados</text>
+  <line x1="1256" y1="230" x2="1256" y2="250" stroke="#7a3fb0" stroke-width="2.2"/>
+  <line x1="1256" y1="250" x2="16" y2="250" stroke="#7a3fb0" stroke-width="2.2" stroke-dasharray="6 4"/>
+  <line x1="16" y1="250" x2="16" y2="545" stroke="#7a3fb0" stroke-width="2.2" stroke-dasharray="6 4"/>
+  <line x1="16" y1="545" x2="44" y2="545" stroke="#7a3fb0" stroke-width="2.2" stroke-dasharray="6 4" marker-end="url(#fi)"/>
+  <text x="1040" y="244" class="labi">fallos → clasificación</text>
+  <line x1="195" y1="650" x2="195" y2="812" stroke="#7a3fb0" stroke-width="2.2"/>
+  <line x1="195" y1="812" x2="296" y2="812" stroke="#7a3fb0" stroke-width="2.2" marker-end="url(#fi)"/>
+  <text x="203" y="700" class="labi">propuestas y</text>
+  <text x="203" y="716" class="labi">clasificaciones</text>
+
+  <!-- Leyenda -->
+  <rect x="22" y="860" width="268" height="60" rx="6" fill="#fff" stroke="#c2ccd5"/>
+  <line x1="44" y1="880" x2="84" y2="880" stroke="#1a344a" stroke-width="2.2" marker-end="url(#f)"/>
+  <text x="92" y="884" class="m">Flujo de ejecución de pruebas</text>
+  <line x1="44" y1="904" x2="84" y2="904" stroke="#7a3fb0" stroke-width="2.2" stroke-dasharray="6 4" marker-end="url(#fi)"/>
+  <text x="92" y="908" font-size="11" fill="#5b6b78">Flujo de IA (solo pasa lo aprobado por el equipo)</text>
+</svg>

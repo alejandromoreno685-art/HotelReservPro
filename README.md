@@ -177,3 +177,18 @@ huéspedes, habitaciones, reservas, transiciones de estado, validación de fecha
 límites de intervalos, comprobantes PDF y disponibilidad con almacenes en
 memoria y mocks SQL. La integración con SQL Server real y los resultados de
 RTF4 están documentados en `docs/rtf4/README.md`.
+
+## Arnés de pruebas con IA y pipeline
+
+| Comando | Qué ejecuta |
+|---|---|
+| `npm test` | Pruebas unitarias y de rutas con dobles de prueba (memoria y mocks) |
+| `npm run seed:rtf4` | Datos ficticios en `HotelReservePro_Test` |
+| `npm run test:sqlserver` | 95 variantes de API (CP-01 a CP-32) contra SQL Server real |
+| `npm run test:ui` | Recorridos de interfaz con Playwright y Chrome |
+| `npm run ia:generar -- --hu HU-001` | La IA propone casos de borde para una HU (requiere `ANTHROPIC_API_KEY`) |
+| `npm run ia:clasificar -- --resultados <ruta>` | La IA clasifica las variantes fallidas de una ejecución |
+
+El pipeline `.github/workflows/harness.yml` ejecuta todo en GitHub Actions en
+cada push. La arquitectura y el detalle de cada componente están en
+[`docs/harness/README.md`](docs/harness/README.md).
