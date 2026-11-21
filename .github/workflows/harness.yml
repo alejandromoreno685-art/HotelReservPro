@@ -25,8 +25,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
         with:
           node-version: 22
           cache: npm
@@ -52,8 +52,8 @@ jobs:
       RTF4_RUN_LABEL: ci-${{ github.run_number }}
       SQLCMD: /opt/mssql-tools18/bin/sqlcmd
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
         with:
           node-version: 22
           cache: npm
@@ -157,7 +157,7 @@ jobs:
 
       - name: Publicar evidencias
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: evidencias-${{ github.run_number }}
           path: |
@@ -176,8 +176,8 @@ jobs:
     env:
       IA_MODELO: llama3.2
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
         with:
           node-version: 22
           cache: npm
@@ -204,7 +204,7 @@ jobs:
 
       - name: Publicar propuesta de IA
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: ia-casos-${{ github.run_number }}
           path: reports/ia/
