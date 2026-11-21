@@ -2,7 +2,8 @@
 # 1) unitarias: node:test con dobles de prueba (memoria y mocks).
 # 2) integracion: SQL Server real en contenedor, datos ficticios, API (95 variantes),
 #    Postman/Newman e interfaz con Playwright. Si algo falla, el módulo de IA
-#    clasifica los fallos (solo si el repositorio tiene el secreto ANTHROPIC_API_KEY).
+#    clasifica los fallos con un modelo local gratuito (Ollama + llama3.2).
+# 3) ia: en cada push a main, la IA propone casos de borde para una HU (demostración).
 name: Arnes de pruebas
 
 on:
@@ -129,17 +130,20 @@ jobs:
       - name: Pruebas de interfaz (Playwright + Chrome)
         run: npm run test:ui
 
-      - name: Clasificar fallos con IA
+      - name: Clasificar fallos con IA (Ollama, gratuito)
         if: failure()
-        env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        continue-on-error: true
+        timeout-minutes: 20
         run: |
           RESULTADOS="entregables/RTF4/evidencias/api/$RTF4_RUN_LABEL/resultados.json"
-          if [ -z "${ANTHROPIC_API_KEY:-}" ]; then
-            echo "Sin secreto ANTHROPIC_API_KEY: se omite la clasificacion con IA."
-          elif [ -f "$RESULTADOS" ]; then
-            node scripts/ai-test-assistant.js clasificar --resultados "$RESULTADOS" || true
-          fi
+          if [ ! -f "$RESULTADOS" ]; then echo "No hay resultados de API para clasificar."; exit 0; fi
+          curl -fsSL https://ollama.com/install.sh | sh
+          curl -sf http://localhost:11434/api/version > /dev/null || (ollama serve > /tmp/ollama.log 2>&1 &)
+          for intento in $(seq 1 30); do curl -sf http://localhost:11434/api/version > /dev/null && break; sleep 1; done
+          ollama pull "$IA_MODELO"
+          node scripts/ai-test-assistant.js clasificar --resultados "$RESULTADOS"
+        env:
+          IA_MODELO: llama3.2
 
       - name: Resumen de la ejecucion
         if: always()
@@ -160,5 +164,49 @@ jobs:
             entregables/RTF4/evidencias/
             reports/
             server.log
+          retention-days: 14
+          if-no-files-found: warn
+
+  ia:
+    name: IA genera casos de borde (Ollama, gratuito)
+    needs: unitarias
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      IA_MODELO: llama3.2
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+
+      - name: Instalar Ollama y descargar el modelo
+        run: |
+          set -euo pipefail
+          curl -fsSL https://ollama.com/install.sh | sh
+          curl -sf http://localhost:11434/api/version > /dev/null || (ollama serve > /tmp/ollama.log 2>&1 &)
+          for intento in $(seq 1 30); do curl -sf http://localhost:11434/api/version > /dev/null && break; sleep 1; done
+          ollama pull "$IA_MODELO"
+
+      - name: Proponer casos para HU-001 (requieren revision humana)
+        run: npm run ia:generar -- --hu HU-001 --maximo 4
+
+      - name: Resumen de la propuesta
+        if: always()
+        run: |
+          for archivo in reports/ia/*.md; do
+            [ -f "$archivo" ] && { cat "$archivo"; echo; } >> "$GITHUB_STEP_SUMMARY"
+          done
+          true
+
+      - name: Publicar propuesta de IA
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ia-casos-${{ github.run_number }}
+          path: reports/ia/
           retention-days: 14
           if-no-files-found: warn

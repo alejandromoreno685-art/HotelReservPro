@@ -186,7 +186,7 @@ RTF4 están documentados en `docs/rtf4/README.md`.
 | `npm run seed:rtf4` | Datos ficticios en `HotelReservePro_Test` |
 | `npm run test:sqlserver` | 95 variantes de API (CP-01 a CP-32) contra SQL Server real |
 | `npm run test:ui` | Recorridos de interfaz con Playwright y Chrome |
-| `npm run ia:generar -- --hu HU-001` | La IA propone casos de borde para una HU (requiere `ANTHROPIC_API_KEY`) |
+| `npm run ia:generar -- --hu HU-001` | La IA propone casos de borde para una HU (gratuito con Ollama: `ollama pull llama3.2`) |
 | `npm run ia:clasificar -- --resultados <ruta>` | La IA clasifica las variantes fallidas de una ejecución |
 
 El pipeline `.github/workflows/harness.yml` ejecuta todo en GitHub Actions en

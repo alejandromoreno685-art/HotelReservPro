@@ -1,16 +1,16 @@
 #!/usr/bin/env node
 /*
- * Asistente de IA del arnés de pruebas.
+ * Asistente de IA del arnés de pruebas (gratuito, con Ollama).
  *
  *   node scripts/ai-test-assistant.js generar --hu HU-001 [--maximo 8]
  *   node scripts/ai-test-assistant.js clasificar --resultados <ruta/resultados.json>
  *
- * Credenciales: ANTHROPIC_API_KEY (o un perfil de `ant auth login`).
+ * Requisitos: Ollama en ejecución (https://ollama.com/download) y el modelo
+ * descargado: `ollama pull llama3.2`. Variables opcionales: OLLAMA_URL, IA_MODELO.
  * Salida: reports/ia/ (excluida de Git). Todo resultado requiere revisión humana.
  */
 const fs = require('node:fs');
 const path = require('node:path');
-const Anthropic = require('@anthropic-ai/sdk');
 const asistente = require('./ai/testAssistant');
 
 const raiz = path.join(__dirname, '..');
@@ -33,16 +33,18 @@ async function main() {
   const comando = process.argv[2];
   const salida = path.resolve(argumento('salida', path.join(raiz, 'reports', 'ia')));
   const marca = new Date().toISOString().replace(/[:.]/g, '-');
+  const proveedor = asistente.crearProveedorOllama();
 
   if (comando === 'generar') {
     const hu = argumento('hu');
     if (!hu) throw new asistente.AsistenteIAError('Indica la historia: --hu HU-001');
     const catalogo = JSON.parse(fs.readFileSync(path.join(raiz, 'docs', 'harness', 'catalogo-requisitos.json'), 'utf8'));
-    const resultado = await asistente.generarCasos({
-      client: new Anthropic(), catalogo, hu, maximo: Number(argumento('maximo', 8))
-    });
+    console.log(`Generando casos para ${hu} con ${proveedor.nombre}/${proveedor.modelo}...`);
+    const inicio = Date.now();
+    const resultado = await asistente.generarCasos({ proveedor, catalogo, hu, maximo: Number(argumento('maximo', 8)) });
+    resultado.duracion_segundos = Math.round((Date.now() - inicio) / 1000);
     const archivos = guardar(`casos-${hu}-${marca}`, resultado, salida);
-    console.log(`${resultado.casos.length} casos propuestos para ${hu} (${resultado.descartados_por_validacion.length} descartados por validación).`);
+    console.log(`${resultado.casos.length} casos propuestos (${resultado.descartados_por_validacion.length} descartados por validación) en ${resultado.duracion_segundos} s.`);
     console.log(`Revisión humana pendiente. Archivos: ${archivos.join(', ')}`);
     return;
   }
@@ -51,11 +53,7 @@ async function main() {
     const ruta = argumento('resultados');
     if (!ruta) throw new asistente.AsistenteIAError('Indica el archivo: --resultados <ruta/resultados.json>');
     const reporte = JSON.parse(fs.readFileSync(path.resolve(ruta), 'utf8'));
-    const fallos = asistente.extraerFallos(reporte);
-    // Solo se crea el cliente si hay algo que analizar.
-    const resultado = await asistente.clasificarFallos({
-      client: fallos.length ? new Anthropic() : null, reporte
-    });
+    const resultado = await asistente.clasificarFallos({ proveedor, reporte });
     const archivos = guardar(`clasificacion-${marca}`, resultado, salida);
     console.log(resultado.resumen);
     console.log(`Archivos: ${archivos.join(', ')}`);
@@ -67,20 +65,6 @@ async function main() {
 }
 
 main().catch((error) => {
-  if (error instanceof asistente.AsistenteIAError) {
-    console.error(error.message);
-  } else if (error instanceof Anthropic.AuthenticationError) {
-    console.error('Credenciales de Anthropic inválidas o ausentes. Define ANTHROPIC_API_KEY o ejecuta `ant auth login`.');
-  } else if (error instanceof Anthropic.RateLimitError) {
-    console.error('Límite de solicitudes alcanzado; intenta de nuevo en unos minutos.');
-  } else if (error instanceof Anthropic.APIError) {
-    console.error(`Error de la API de Anthropic (${error.status}): ${error.message}`);
-  } else if (error instanceof Anthropic.AnthropicError) {
-    console.error(`No se pudo usar la API de Anthropic: ${error.message}`);
-  } else {
-    // Incluye la ausencia de credenciales, que el SDK informa como Error genérico.
-    console.error(`No se pudo ejecutar el asistente: ${error.message}`);
-    console.error('Si faltan credenciales, define ANTHROPIC_API_KEY o ejecuta `ant auth login`.');
-  }
+  console.error(error instanceof asistente.AsistenteIAError ? error.message : `No se pudo ejecutar el asistente: ${error.message}`);
   process.exitCode = 1;
 });

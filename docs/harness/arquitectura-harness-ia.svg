@@ -52,7 +52,7 @@
     <text x="1256" y="140" text-anchor="middle" class="t" font-size="13">Etapa 5 (si falla)</text>
     <text x="1256" y="160" text-anchor="middle" class="s">IA clasifica fallos</text>
     <text x="1256" y="178" text-anchor="middle" class="m">y publica artefactos</text>
-    <text x="1256" y="196" text-anchor="middle" class="m">resumen + evidencias</text>
+    <text x="1256" y="196" text-anchor="middle" class="m">Ollama en el runner</text>
     <line x1="508" y1="166" x2="518" y2="166" stroke="#1a344a" stroke-width="2" marker-end="url(#f)"/>
     <line x1="720" y1="166" x2="730" y2="166" stroke="#1a344a" stroke-width="2" marker-end="url(#f)"/>
     <line x1="932" y1="166" x2="942" y2="166" stroke="#1a344a" stroke-width="2" marker-end="url(#f)"/>
@@ -62,7 +62,7 @@
   <!-- Módulo IA -->
   <rect x="30" y="290" width="330" height="360" rx="10" fill="#f6effc" stroke="#7a3fb0" stroke-width="2"/>
   <text x="195" y="316" text-anchor="middle" class="t" fill="#5a2a86">2 · Módulo de IA</text>
-  <text x="195" y="336" text-anchor="middle" class="m">scripts/ai/testAssistant.js · Claude Opus 5.5 (API)</text>
+  <text x="195" y="336" text-anchor="middle" class="m">scripts/ai/testAssistant.js · Ollama + llama3.2 (gratuito)</text>
   <rect x="48" y="352" width="294" height="118" rx="8" fill="#fff" stroke="#b892dc"/>
   <text x="62" y="374" class="t" font-size="13.5">Generador de casos</text>
   <text x="62" y="395" class="s">Entrada: HU, criterios y CP existentes</text>
@@ -75,7 +75,7 @@
   <text x="62" y="544" class="s">Defecto · prueba frágil · ambiente ·</text>
   <text x="62" y="563" class="s">datos de prueba · requisito ambiguo</text>
   <text x="62" y="582" class="s">Sugiere defecto en Jira y severidad</text>
-  <text x="195" y="630" text-anchor="middle" class="m">Sin fallos no se llama a la IA (costo cero)</text>
+  <text x="195" y="630" text-anchor="middle" class="m">Modelo local: sin claves, sin pagos</text>
 
   <!-- Test harness -->
   <rect x="400" y="290" width="560" height="360" rx="10" fill="#eef5f3" stroke="#2c6b5b" stroke-width="2"/>
@@ -94,7 +94,7 @@
   <text x="432" y="458" class="t" font-size="13.5">Stubs y mocks</text>
   <text x="432" y="479" class="s">Almacenes en memoria (NODE_ENV=test)</text>
   <text x="432" y="498" class="s">Mocks de consultas SQL</text>
-  <text x="432" y="517" class="s">Cliente de IA simulado</text>
+  <text x="432" y="517" class="s">fetch simulado para la IA</text>
   <rect x="686" y="436" width="256" height="92" rx="8" fill="#fff" stroke="#8fc0b2"/>
   <text x="700" y="458" class="t" font-size="13.5">Fixtures</text>
   <text x="700" y="479" class="s">seed-rtf4.js: usuarios, huéspedes,</text>
