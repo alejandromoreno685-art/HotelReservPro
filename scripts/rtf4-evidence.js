@@ -1074,7 +1074,10 @@ async function run({ runLabel = process.env.RTF4_RUN_LABEL || 'ejecucion', outpu
 module.exports = { run };
 
 if (require.main === module) {
-  run().catch((error) => {
+  run().then((report) => {
+    // Compuerta de calidad: cualquier variante no aprobada hace fallar el proceso (CI).
+    if (report.resultados.some((item) => item.estado !== 'Aprobado')) process.exitCode = 1;
+  }).catch((error) => {
     console.error(error.message);
     process.exitCode = 1;
   });

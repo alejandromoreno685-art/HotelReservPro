@@ -1,0 +1,164 @@
+# Pipeline del arnés de pruebas de HotelReserve Pro (Trabajo 9).
+# 1) unitarias: node:test con dobles de prueba (memoria y mocks).
+# 2) integracion: SQL Server real en contenedor, datos ficticios, API (95 variantes),
+#    Postman/Newman e interfaz con Playwright. Si algo falla, el módulo de IA
+#    clasifica los fallos (solo si el repositorio tiene el secreto ANTHROPIC_API_KEY).
+name: Arnes de pruebas
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: harness-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  unitarias:
+    name: Pruebas unitarias (node:test)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+
+  integracion:
+    name: Integracion SQL Server, API, Postman e interfaz
+    needs: unitarias
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      NODE_ENV: rtf4-integration
+      RTF4_SQLSERVER_TEST: '1'
+      DB_NAME: HotelReservePro_Test
+      DB_SERVER: localhost
+      DB_PORT: '1433'
+      DB_USER: sa
+      DB_ENCRYPT: 'false'
+      DB_TRUST_SERVER_CERTIFICATE: 'true'
+      ADMIN_USER: rtf4-admin
+      PORT: '3000'
+      RTF4_RUN_LABEL: ci-${{ github.run_number }}
+      SQLCMD: /opt/mssql-tools18/bin/sqlcmd
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+
+      - name: Generar credenciales efimeras (fixtures)
+        run: |
+          set -euo pipefail
+          SA="Ci-$(openssl rand -hex 12)-Aa1"
+          echo "::add-mask::$SA"
+          echo "DB_PASSWORD=$SA" >> "$GITHUB_ENV"
+          for nombre in RTF4_ADMIN_PASSWORD RTF4_RECEPTION_PASSWORD RTF4_CONSULTA_PASSWORD; do
+            valor="Rtf4-$(openssl rand -hex 10)"
+            echo "::add-mask::$valor"
+            echo "$nombre=$valor" >> "$GITHUB_ENV"
+            if [ "$nombre" = RTF4_ADMIN_PASSWORD ]; then echo "ADMIN_PASSWORD=$valor" >> "$GITHUB_ENV"; fi
+          done
+          JWT="$(openssl rand -hex 32)"
+          echo "::add-mask::$JWT"
+          echo "JWT_SECRET=$JWT" >> "$GITHUB_ENV"
+
+      - name: Levantar SQL Server 2022 en contenedor
+        run: |
+          set -euo pipefail
+          docker run -d --name mssql -e ACCEPT_EULA=Y -e "MSSQL_SA_PASSWORD=$DB_PASSWORD" \
+            -p 1433:1433 mcr.microsoft.com/mssql/server:2022-latest
+          for intento in $(seq 1 60); do
+            if docker exec mssql "$SQLCMD" -C -S localhost -U sa -P "$DB_PASSWORD" -Q "SELECT 1" > /dev/null 2>&1; then
+              echo "SQL Server listo"; exit 0
+            fi
+            sleep 2
+          done
+          docker logs mssql | tail -40
+          exit 1
+
+      - name: Crear esquema y aplicar migraciones
+        run: |
+          set -euo pipefail
+          sed -e '1s/.*/:setvar DatabaseName "HotelReservePro_Test"/' \
+              -e "s/REPLACE_WITH_A_STRONG_PASSWORD/$DB_PASSWORD/" database/HotelReservePro.sql > /tmp/base.sql
+          docker cp /tmp/base.sql mssql:/tmp/base.sql
+          docker cp migrations/. mssql:/tmp/migrations
+          docker exec mssql "$SQLCMD" -C -I -b -S localhost -U sa -P "$DB_PASSWORD" -i /tmp/base.sql
+          for archivo in $(ls migrations | sort); do
+            docker exec mssql "$SQLCMD" -C -I -b -S localhost -U sa -P "$DB_PASSWORD" -i "/tmp/migrations/$archivo"
+          done
+
+      - name: Cargar datos ficticios
+        run: npm run seed:rtf4
+
+      - name: Pruebas de API contra SQL Server (CP-01 a CP-32)
+        run: npm run test:sqlserver
+
+      - name: Iniciar la aplicacion
+        run: |
+          node main.js > server.log 2>&1 &
+          for intento in $(seq 1 30); do
+            curl -sf http://localhost:3000/login > /dev/null && exit 0
+            sleep 1
+          done
+          cat server.log
+          exit 1
+
+      - name: Contrato de API con Postman (Newman)
+        run: |
+          mkdir -p reports
+          npx --yes newman@6.2.1 run docs/rtf4/postman/HotelReservePro_RTF4.postman_collection.json \
+            -e docs/rtf4/postman/HotelReservePro_RTF4.postman_environment.json \
+            --env-var baseUrl=http://localhost:3000 \
+            --env-var "adminPassword=$RTF4_ADMIN_PASSWORD" \
+            --env-var "consultaPassword=$RTF4_CONSULTA_PASSWORD" \
+            --reporters cli,junit --reporter-junit-export reports/newman-junit.xml
+
+      - name: Pruebas de interfaz (Playwright + Chrome)
+        run: npm run test:ui
+
+      - name: Clasificar fallos con IA
+        if: failure()
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          RESULTADOS="entregables/RTF4/evidencias/api/$RTF4_RUN_LABEL/resultados.json"
+          if [ -z "${ANTHROPIC_API_KEY:-}" ]; then
+            echo "Sin secreto ANTHROPIC_API_KEY: se omite la clasificacion con IA."
+          elif [ -f "$RESULTADOS" ]; then
+            node scripts/ai-test-assistant.js clasificar --resultados "$RESULTADOS" || true
+          fi
+
+      - name: Resumen de la ejecucion
+        if: always()
+        run: |
+          for archivo in entregables/RTF4/evidencias/api/$RTF4_RUN_LABEL/resultados.md \
+                         entregables/RTF4/evidencias/ui/$RTF4_RUN_LABEL/resultados.md \
+                         reports/ia/*.md; do
+            [ -f "$archivo" ] && { cat "$archivo"; echo; } >> "$GITHUB_STEP_SUMMARY"
+          done
+          true
+
+      - name: Publicar evidencias
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: evidencias-${{ github.run_number }}
+          path: |
+            entregables/RTF4/evidencias/
+            reports/
+            server.log
+          retention-days: 14
+          if-no-files-found: warn

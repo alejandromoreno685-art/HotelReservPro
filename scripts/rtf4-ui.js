@@ -21,7 +21,10 @@ function chromePath() {
   const candidates = [
     process.env.CHROME_PATH,
     'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
-    'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe'
+    'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
+    '/usr/bin/google-chrome',
+    '/usr/bin/google-chrome-stable',
+    '/usr/bin/chromium-browser'
   ].filter(Boolean);
   return candidates.find((candidate) => fs.existsSync(candidate));
 }
@@ -362,5 +365,8 @@ async function run(runLabel = process.env.RTF4_RUN_LABEL || 'ui') {
 
 module.exports = { run };
 if (require.main === module) {
-  run().catch((error) => { console.error(error); process.exitCode = 1; });
+  run().then((results) => {
+    // Compuerta de calidad: cualquier variante no aprobada hace fallar el proceso (CI).
+    if (results.some((item) => item.estado !== 'Aprobado')) process.exitCode = 1;
+  }).catch((error) => { console.error(error); process.exitCode = 1; });
 }
