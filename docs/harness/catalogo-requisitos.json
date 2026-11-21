@@ -1,0 +1,102 @@
+{
+  "sistema": "HotelReserve Pro - Hostería y Hotel El Turista",
+  "dominio": "Hotelería y turismo: reservas de habitaciones, disponibilidad y comprobantes de estadía",
+  "reglas": [
+    "Fechas del hotel en America/Bogota; la entrada no puede ser anterior al día actual del hotel.",
+    "La salida debe ser posterior a la entrada; la estadía es el intervalo [entrada, salida).",
+    "Huéspedes: número entero entre 1 y 12 sin superar la capacidad de la habitación.",
+    "Solo habitaciones en estado DISPONIBLE pueden reservarse.",
+    "PENDING_DEPOSIT, CONFIRMED e IN_PROGRESS bloquean disponibilidad; CANCELLED y COMPLETED no.",
+    "Transiciones permitidas: PENDING_DEPOSIT->CONFIRMED, PENDING_DEPOSIT->CANCELLED, CONFIRMED->CANCELLED; cualquier otra responde 409.",
+    "El alta de reserva exige el encabezado Idempotency-Key; repetir la clave con los mismos datos devuelve la misma reserva.",
+    "Comprobante: alojamiento = noches x tarifa guardada; total = alojamiento + consumos; saldo = total - anticipos; sin impuestos.",
+    "Un anticipo no puede superar el saldo pendiente; una reserva cancelada no admite consumos ni anticipos.",
+    "Roles: ADMIN todo; RECEPCION huéspedes, disponibilidad, reservas y comprobantes; CONSULTA solo disponibilidad y habitaciones. 401 sin sesión, 403 sin permiso."
+  ],
+  "historias": [
+    {
+      "id": "HU-001",
+      "jira": "SCRUM-5",
+      "titulo": "Registrar una reserva",
+      "criterios": {
+        "A06": "Fechas reales y ordenadas, entrada no anterior a T, huéspedes enteros de 1 a 12 dentro de la capacidad.",
+        "A07": "Un alta válida produce una sola reserva persistida en PENDING_DEPOSIT.",
+        "A08": "Rechaza referencias inexistentes, habitación no operativa y cruces detectados después de consultar.",
+        "A09": "Solo aplica transiciones permitidas; un rechazo conserva el estado.",
+        "A10": "Dos solicitudes simultáneas nunca producen dos reservas activas incompatibles.",
+        "A11": "Un fallo no se presenta como éxito; se puede conocer el resultado y no quedan datos parciales.",
+        "A12": "Conflictos de integridad se rechazan de forma controlada sin duplicados ni huérfanos.",
+        "A13": "Envío y corrección comprensibles; sin duplicados por doble clic; se conservan datos válidos."
+      },
+      "casos_existentes": {
+        "CP-09": "Crear reserva válida y persistida",
+        "CP-10": "Límites de fecha de entrada y salida (T-1, T, salida igual o anterior)",
+        "CP-11": "Fechas imposibles, texto como fecha y campos obligatorios",
+        "CP-12": "Huéspedes 0, 1, 2, 3, 1.5, 12 y 13",
+        "CP-13": "Huésped o habitación inexistente, habitación en mantenimiento, ID mal formado",
+        "CP-14": "Solapamientos: igualdad, inicio, final y contención",
+        "CP-15": "Entrada el día de salida de otra reserva y disponibilidad desactualizada",
+        "CP-16": "Transiciones de estado y cancelación",
+        "CP-17": "Concurrencia: 10 pares de solicitudes simultáneas",
+        "CP-18": "Caída de conexión a la base de datos",
+        "CP-19": "Fallo al iniciar la transacción",
+        "CP-20": "Fallo antes del commit y del rollback",
+        "CP-21": "Respuesta perdida después del commit (reconciliación por clave)",
+        "CP-22": "Errores 2601 y 2627 de SQL Server",
+        "CP-23": "Error 547 de llave foránea",
+        "CP-24": "Doble clic y doble envío con la misma clave"
+      }
+    },
+    {
+      "id": "HU-002",
+      "jira": "SCRUM-6",
+      "titulo": "Consultar disponibilidad",
+      "criterios": {
+        "A04": "La búsqueda respeta capacidad, tipo y estado físico; sin resultados se distingue de un error.",
+        "A05": "No se aceptan cruces de reservas activas; sí la entrada el mismo día de una salida."
+      },
+      "casos_existentes": {
+        "CP-05": "Disponibilidad en un periodo libre",
+        "CP-06": "Intervalos adyacentes y solapados",
+        "CP-07": "Disponibilidad según los cinco estados de la reserva",
+        "CP-08": "Capacidad, fechas invertidas, sin resultados y falla del servidor"
+      }
+    },
+    {
+      "id": "HU-004",
+      "jira": "SCRUM-7",
+      "titulo": "Acceder con usuario y contraseña",
+      "criterios": {
+        "A01": "Credenciales válidas permiten acceso al área autorizada.",
+        "A02": "Datos inválidos o vacíos no crean sesión; el mensaje no revela si la cuenta existe.",
+        "A03": "Sin sesión válida no se accede a recursos protegidos (401).",
+        "A15": "API e interfaz respetan permisos; 403 para usuario autenticado sin autorización."
+      },
+      "casos_existentes": {
+        "CP-01": "Login válido",
+        "CP-02": "Contraseña incorrecta y usuario inexistente con mensaje genérico",
+        "CP-03": "Campos de login vacíos",
+        "CP-04": "Sin token, token vencido, token alterado y página sin sesión",
+        "CP-32": "Operaciones de reserva sin permiso por URL directa"
+      }
+    },
+    {
+      "id": "HU-005",
+      "jira": "SCRUM-8",
+      "titulo": "Generar comprobantes de pago",
+      "criterios": {
+        "A11": "Un fallo al generar el documento no se presenta como éxito.",
+        "A14": "Comprobante consistente, cálculo reproducible, tarifa histórica y reimpresión sin cargos nuevos.",
+        "A15": "Solo ADMIN y RECEPCION consultan comprobantes."
+      },
+      "casos_existentes": {
+        "CP-25": "Comprobante de 2 noches x $200.000 y tarifa histórica",
+        "CP-26": "Consumos, anticipos, reenvío idempotente, anticipo mayor al saldo y reserva cancelada",
+        "CP-27": "Comprobante de reserva inexistente o ID mal formado",
+        "CP-28": "Comprobante sin permiso (403)",
+        "CP-29": "Reimpresión sin cargos duplicados",
+        "CP-30": "Fallo al generar el PDF y reintento"
+      }
+    }
+  ]
+}

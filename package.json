@@ -8,20 +8,24 @@
     "test": "node --test",
     "test:sqlserver": "node scripts/rtf4-evidence.js",
     "test:ui": "node scripts/rtf4-ui.js",
-    "seed:rtf4": "node scripts/seed-rtf4.js"
+    "seed:rtf4": "node scripts/seed-rtf4.js",
+    "ia:generar": "node scripts/ai-test-assistant.js generar",
+    "ia:clasificar": "node scripts/ai-test-assistant.js clasificar"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@anthropic-ai/sdk": "^1.12.0",
     "cookie-parser": "^1.4.7",
     "dotenv": "^18.0.7",
     "ejs": "^7.0.1",
     "express": "^5.3.0",
     "jsonwebtoken": "^9.0.3",
     "mssql": "^12.7.4",
-    "sweetalert": "^2.1.2"
+    "sweetalert": "^2.1.2",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "playwright-core": "^1.49.1"
