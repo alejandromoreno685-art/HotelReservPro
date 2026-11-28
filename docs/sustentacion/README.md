@@ -248,5 +248,5 @@ o que el docente tenga acceso.
 |---|---|
 | Repositorio con pruebas y documentación | https://github.com/alejandromoreno685-art/HotelReservPro |
 | Ejecuciones de las pruebas (CI) | https://github.com/alejandromoreno685-art/HotelReservPro/actions |
-| Proyecto en Jira | Se publica en el foro |
-| Video de sustentación | Se publica en el foro |
+| Proyecto en Jira (4 sprints y backlog de trabajo futuro) | https://pascualbravo-team-qse9lptz.atlassian.net/jira/software/c/projects/HRP/boards/34/backlog |
+| Video de sustentación | https://drive.google.com/file/d/1zNATVtZAGGo_pYSKV7zaK5UOZxkyj0BS/view?usp=sharing |
