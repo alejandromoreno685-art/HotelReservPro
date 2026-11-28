@@ -1,5 +1,5 @@
 # Pipeline del arnés de pruebas de HotelReserve Pro (Trabajo 9).
-# 1) unitarias: node:test con dobles de prueba (memoria y mocks).
+# 1) unitarias: node:test con dobles de prueba (memoria y mocks) y cobertura de código con umbral.
 # 2) integracion: SQL Server real en contenedor, datos ficticios, API (95 variantes),
 #    Postman/Newman e interfaz con Playwright. Si algo falla, el módulo de IA
 #    clasifica los fallos con un modelo local gratuito (Ollama + llama3.2).
@@ -31,7 +31,27 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm test
+      - name: Pruebas unitarias con cobertura (umbral 70% lineas y ramas, 80% funciones)
+        run: |
+          mkdir -p reports
+          npm run test:coverage 2>&1 | tee reports/cobertura.txt
+      - name: Resumen de cobertura
+        if: always()
+        run: |
+          {
+            echo "## Pruebas estructurales y cobertura de código"
+            echo '```'
+            grep -E '^# (tests|pass|fail|skipped) ' reports/cobertura.txt | sed 's/^# //'
+            sed -n '/start of coverage report/,/end of coverage report/p' reports/cobertura.txt | sed 's/^# //'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Publicar cobertura
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: cobertura-${{ github.run_number }}
+          path: reports/cobertura.txt
+          retention-days: 14
 
   integracion:
     name: Integracion SQL Server, API, Postman e interfaz

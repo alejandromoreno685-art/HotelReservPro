@@ -6,6 +6,7 @@
     "start": "node main.js",
     "dev": "node --watch main.js",
     "test": "node --test",
+    "test:coverage": "node --test --experimental-test-coverage --test-coverage-include=\"src/**\" --test-coverage-include=main.js --test-coverage-include=\"scripts/ai/**\" --test-coverage-lines=70 --test-coverage-branches=70 --test-coverage-functions=80",
     "test:sqlserver": "node scripts/rtf4-evidence.js",
     "test:ui": "node scripts/rtf4-ui.js",
     "seed:rtf4": "node scripts/seed-rtf4.js",
