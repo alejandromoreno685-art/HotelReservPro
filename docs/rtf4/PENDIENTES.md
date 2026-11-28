@@ -27,4 +27,6 @@
 - A las reservas anteriores a la migración se les asignó la tarifa actual de
   su habitación porque no existía un valor histórico.
 - Pruebas en un solo equipo, una instancia de la aplicación y Chrome; sin
-  pruebas de carga, accesibilidad formal ni cobertura de código.
+  pruebas de carga ni accesibilidad formal. La cobertura de código se agregó
+  después del RTF4 (`npm run test:coverage`); el plan de trabajo futuro está en
+  [docs/sustentacion/README.md](../sustentacion/README.md).
