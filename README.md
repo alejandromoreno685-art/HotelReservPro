@@ -1,5 +1,20 @@
 # HotelReserve Pro
 
+[![Arnés de pruebas](https://github.com/alejandromoreno685-art/HotelReservPro/actions/workflows/harness.yml/badge.svg)](https://github.com/alejandromoreno685-art/HotelReservPro/actions/workflows/harness.yml)
+
+> **Entrega final de Ingeniería de Software II:** el balance del proyecto
+> (resultados de pruebas, cobertura, alcance frente a Jira, retos del testing,
+> trabajo futuro y guion de sustentación) está en
+> [`docs/sustentacion/README.md`](docs/sustentacion/README.md).
+>
+> | Documento | Contenido |
+> |---|---|
+> | [Entrega final](docs/sustentacion/README.md) | Balance del semestre y cómo verificar las pruebas |
+> | [Trazabilidad](docs/rtf4/TRAZABILIDAD.md) | Caso de prueba → HU → criterio → evidencia |
+> | [Reporte de ejecución](docs/rtf4/REPORTE_EJECUCION.md) | Resultados de API, interfaz y Postman |
+> | [Arnés con IA](docs/harness/README.md) | Arquitectura del arnés y pipeline |
+> | [Ejecuciones en GitHub Actions](https://github.com/alejandromoreno685-art/HotelReservPro/actions/workflows/harness.yml) | Pruebas automáticas en cada push |
+
 Aplicación web para la administración hotelera. El primer incremento funcional
 incluye autenticación, gestión de huéspedes, gestión de habitaciones, consulta de
 disponibilidad y gestión de reservas. Los datos de la app se guardan en SQL
@@ -7,7 +22,7 @@ Server; las pruebas automatizadas usan datos temporales en memoria.
 
 ## Requisitos
 
-- Node.js 20 o superior.
+- Node.js 22 o superior (la cobertura de código usa opciones de `node:test` de esa versión).
 - npm.
 - SQL Server 2019 o superior con autenticación de SQL Server habilitada.
 
@@ -170,6 +185,7 @@ minutos al alcanzar cinco intentos fallidos.
 
 ```powershell
 npm test
+npm run test:coverage   # mismas pruebas con cobertura y umbral mínimo
 ```
 
 Las pruebas ejercitan autenticación, bloqueo de cuenta, rutas protegidas,
@@ -183,6 +199,7 @@ RTF4 están documentados en `docs/rtf4/README.md`.
 | Comando | Qué ejecuta |
 |---|---|
 | `npm test` | Pruebas unitarias y de rutas con dobles de prueba (memoria y mocks) |
+| `npm run test:coverage` | Las mismas pruebas con cobertura de código (umbral: 70 % líneas y ramas, 80 % funciones) |
 | `npm run seed:rtf4` | Datos ficticios en `HotelReservePro_Test` |
 | `npm run test:sqlserver` | 95 variantes de API (CP-01 a CP-32) contra SQL Server real |
 | `npm run test:ui` | Recorridos de interfaz con Playwright y Chrome |
