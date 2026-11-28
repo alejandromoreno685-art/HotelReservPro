@@ -3,7 +3,7 @@
 [![Arnés de pruebas](https://github.com/alejandromoreno685-art/HotelReservPro/actions/workflows/harness.yml/badge.svg)](https://github.com/alejandromoreno685-art/HotelReservPro/actions/workflows/harness.yml)
 
 **Ingeniería de Software II** · Docente: Juan Camilo Palacio Alcaraz
-**Integrantes:** Alejandro Moreno Jiménez y John Vayro Sánchez
+**Autor:** Alejandro Moreno Jiménez
 **Caso:** Hostería y Hotel El Turista — reservas, disponibilidad y comprobantes de estadía.
 
 Este documento reúne el balance del semestre: cómo verificar las pruebas, qué
@@ -223,17 +223,18 @@ tarifa histórica en el comprobante, pipeline de CI con SQL Server y el arnés c
 
 ## 6. Guion de la sustentación (8 a 10 minutos)
 
-Los dos integrantes deben aparecer en cámara y explicar su parte.
+Sustentación individual: el autor aparece en cámara durante todo el video y
+explica cada bloque.
 
-| Tiempo | Quién | Qué mostrar en pantalla | Qué explicar |
+| Tiempo | Bloque | Qué mostrar en pantalla | Qué explicar |
 |---|---|---|---|
-| 0:00–0:45 | Alejandro | Este documento y la página principal del repositorio | Equipo, problema del hotel y tecnología (Node.js, Express, SQL Server) |
-| 0:45–2:45 | Alejandro | Terminal: `npm run test:coverage`; abrir `test/reservations.test.js` | Pruebas estructurales, mocks y memoria, cobertura del 74.6 % y umbral |
-| 2:45–5:00 | John | GitHub Actions: última ejecución con los tres trabajos en verde y su resumen; una captura de `evidencias-N` | Pruebas funcionales: 95/95 API, 13/13 interfaz, Newman; criterios A01–A16 |
-| 5:00–6:45 | John | Jira: lista o tablero con las HU y tareas finalizadas; tabla 3.1 de este documento | Planeado frente a entregado: 8 de 11 entregadas, 3 parciales |
-| 6:45–8:15 | Alejandro | Sección 4 de este documento | Retos: aislar la base, concurrencia, fallos inyectados, DEF-05 |
-| 8:15–9:30 | John | Sección 5 de este documento | Trabajo futuro: check-in, carga, seguridad, mutación; deuda técnica |
-| 9:30–10:00 | Ambos | — | Cierre y aprendizaje del equipo |
+| 0:00–0:45 | Presentación | Este documento y la página principal del repositorio | Problema del hotel y tecnología (Node.js, Express, SQL Server) |
+| 0:45–2:45 | Pruebas estructurales | Terminal: `npm run test:coverage`; abrir `test/reservations.test.js` | Mocks y memoria, valores límite, cobertura del 74.6 % y umbral |
+| 2:45–5:00 | Pruebas funcionales | GitHub Actions: última ejecución con los tres trabajos en verde y su resumen; una captura de `evidencias-N` | 95/95 API, 13/13 interfaz, Newman; criterios A01–A16 |
+| 5:00–6:45 | Alcance frente a Jira | Jira: lista o tablero con las HU y tareas finalizadas; tabla 3.1 de este documento | Planeado frente a entregado: 8 de 11 entregadas, 3 parciales |
+| 6:45–8:15 | Retos del testing | Sección 4 de este documento | Aislar la base, concurrencia, fallos inyectados, DEF-05 |
+| 8:15–9:30 | Trabajo futuro | Sección 5 de este documento | Check-in, carga, seguridad, mutación; deuda técnica |
+| 9:30–10:00 | Cierre | — | Principal aprendizaje del semestre |
 
 **Antes de grabar:** ejecutar `npm run test:coverage` una vez, dejar abiertas las
 pestañas de Actions y Jira, y revisar que el enlace de Jira abra sin iniciar sesión
